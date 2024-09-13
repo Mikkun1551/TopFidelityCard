@@ -1,41 +1,12 @@
-from flask import request
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 from db import tipi_azienda, give_id
-
+from schemas import SchemaTipoAzienda, UpdateTipoAziendaSchema
 
 # REQUEST TIPO AZIENDA
 blp = Blueprint('tipiAzienda', __name__, description='Operazioni sui tipi azienda')
-@blp.route('/tipo-azienda')
+@blp.route('/apiTipiAzienda/tipiAzienda')
 class TipoAzienda(MethodView):
-    def post(self):
-        # Crea un nuovo tipo di azienda
-        try:
-            request_data = request.get_json()
-            # Controllo presenza di tutti i parametri nella request
-            if (
-                    'Nome' not in request_data
-                    or 'Descrizione' not in request_data
-            ):
-                abort(400, message="Richiesta non valida")
-            # Controllo di eventuali duplicati rispetto alla request
-            for t_azienda in tipi_azienda:
-                if (
-                        request_data['Nome'] == t_azienda['Nome']
-                        and request_data['Descrizione'] == t_azienda['Descrizione']
-                ):
-                    abort(400, message="Richiesta non valida")
-            new_tipo_azienda = {
-                'idTipoAzienda': give_id('t_azienda'),
-                'Nome': request_data['Nome'],
-                'Descrizione': request_data['Descrizione']
-            }
-            tipi_azienda.append(new_tipo_azienda)
-            return {'message': "Tipo di azienda creato con successo"}, 201
-        except:
-            abort(400, message="Richiesta non valida")
-
-
     def get(self):
         # Ottiene tutti i tipi di azienda
         try:
@@ -45,8 +16,7 @@ class TipoAzienda(MethodView):
             abort(400, message="Richiesta non valida")
 
 
-
-@blp.route('/tipo-azienda/<int:idTipoAzienda>')
+@blp.route('/apiTipiAzienda/tipiAzienda/<int:idTipoAzienda>')
 class TipoAzienda(MethodView):
     def get(self, idTipoAzienda):
         # Ottiene i dettagli di un tipo di azienda specifico
@@ -60,36 +30,42 @@ class TipoAzienda(MethodView):
             abort(400, message="Richiesta non valida")
 
 
-    def put(self, idTipoAzienda):
-        # Aggiorna i dettagli di un tipo di azienda esistente
+@blp.route('/apiTipiAzienda/createTipiAzienda')
+class TipoAzienda(MethodView):
+    @blp.arguments(SchemaTipoAzienda)
+    def post(self, dati_t_azienda):
+        # Crea un nuovo tipo di azienda
         try:
-            request_data = request.get_json()
-            # Controllo presenza di tutti i parametri nella request
-            if (
-                    'Nome' not in request_data
-                    or 'Descrizione' not in request_data
-            ):
-                abort(400, message="Richiesta non valida")
-            # Ricerca tipo azienda nel database
+            # Controllo di eventuali duplicati rispetto alla request
             for t_azienda in tipi_azienda:
-                if t_azienda['idTipoAzienda'] == idTipoAzienda:
-                    t_azienda['Nome'] = request_data['Nome']
-                    t_azienda['Descrizione'] = request_data['Descrizione']
-                    return {'message': "Dettagli del tipo di azienda aggiornati con successo"}, 200
-            abort(404, message="Tipo di azienda non trovato")
+                if (
+                    dati_t_azienda['Categoria'] == t_azienda['Categoria']
+                    and dati_t_azienda['Descrizione'] == t_azienda['Descrizione']
+                ):
+                    abort(400, message="Richiesta non valida")
+            new_tipo_azienda = {
+                'idTipoAzienda': give_id('t_azienda'),
+                'Categoria': dati_t_azienda['Categoria'],
+                'Descrizione': dati_t_azienda['Descrizione']
+            }
+            tipi_azienda.append(new_tipo_azienda)
+            return {'message': "Tipo di azienda creato con successo"}, 201
         except:
             abort(400, message="Richiesta non valida")
 
 
-    def delete(self, idTipoAzienda):
-        # Elimina un tipo di azienda
+@blp.route('/apiTipiAzienda/updateTipiAzienda/<int:idTipoAzienda>')
+class TipoAzienda(MethodView):
+    @blp.arguments(UpdateTipoAziendaSchema)
+    def put(self, dati_t_azienda, idTipoAzienda):
+        # Aggiorna i dettagli di un tipo di azienda esistente
         try:
+            # Ricerca tipo azienda nel database
             for t_azienda in tipi_azienda:
                 if t_azienda['idTipoAzienda'] == idTipoAzienda:
-                    tipi_azienda.remove(t_azienda)
-                    # Lo status code 204 non restituisce alcun messaggio,
-                    # nel caso usare uno status code diverso
-                    return {'message': "Tipo di azienda eliminato con successo"}, 204
+                    t_azienda['Categoria'] = dati_t_azienda['Categoria']
+                    t_azienda['Descrizione'] = dati_t_azienda['Descrizione']
+                    return {'message': "Dettagli del tipo di azienda aggiornati con successo"}, 200
             abort(404, message="Tipo di azienda non trovato")
         except:
             abort(400, message="Richiesta non valida")
