@@ -19,5 +19,7 @@ def give_id(type_op):
         return id_tipo_aziende
 
 
+# La tabella 'azienda' contiene informazioni sulle aziende registrate nel sistema.
 aziende = []
+# La tabella 'tipoAzienda' contiene informazioni sui tipi di azienda disponibili.
 tipi_azienda = []
