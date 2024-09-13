@@ -6,10 +6,12 @@ LABEL authors="Michel"
 EXPOSE 5000
 # La cartella di lavoro nel container
 WORKDIR /app
-# ---
-RUN pip install flask
-# Selezionare cosa copiare e dove, il . iniziale indica tutto, il secondo
-# indica la cartella corrente impostata già su WORKDIR
+# Selezionare cosa copiare e dove, il secondo . indica
+# la cartella corrente impostata già su WORKDIR
+COPY requirements.txt .
+# Comando da eseguire prima dell'avvio del container
+RUN pip install -r requirements.txt
+# Il . iniziale indica tutto
 COPY . .
 # Comando da eseguire alla creazione del container, host indica
 # l'ip su cui ascoltare, successivamente si indica l'ip address
