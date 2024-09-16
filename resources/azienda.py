@@ -1,7 +1,7 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-from db import aziende, tipi_azienda, give_id
-from schemas import SchemaAzienda, UpdateAziendaSchema
+from db import give_id
+from schemas import AziendaSchema, UpdateAziendaSchema
 
 # REQUEST AZIENDA
 blp = Blueprint('aziende', __name__, description='Operazioni sulle aziende')
@@ -9,7 +9,7 @@ blp = Blueprint('aziende', __name__, description='Operazioni sulle aziende')
 
 @blp.route('/apiAzienda/aziende')
 class Azienda(MethodView):
-    @blp.response(200, SchemaAzienda(many=True))
+    @blp.response(200, AziendaSchema(many=True))
     # Ottiene tutte le azienda
     def get(self):
         return aziende.values()
@@ -17,7 +17,7 @@ class Azienda(MethodView):
 
 @blp.route('/apiAzienda/aziende/<int:idAzienda>')
 class Azienda(MethodView):
-    @blp.response(200, SchemaAzienda)
+    @blp.response(200, AziendaSchema)
     # Ottiene i dettagli di un'azienda specifica
     def get(self, idAzienda):
         try:
@@ -28,8 +28,8 @@ class Azienda(MethodView):
 
 @blp.route('/apiAzienda/createAziende')
 class Azienda(MethodView):
-    @blp.arguments(SchemaAzienda)
-    @blp.response(201, SchemaAzienda)
+    @blp.arguments(AziendaSchema)
+    @blp.response(201, AziendaSchema)
     # Crea una nuova azienda
     def post(self, dati_azienda):
         # Controllo di eventuali duplicati rispetto alla request
@@ -57,7 +57,7 @@ class Azienda(MethodView):
 @blp.route('/apiAzienda/updateAziende/<int:idAzienda>')
 class Azienda(MethodView):
     @blp.arguments(UpdateAziendaSchema)
-    @blp.response(200, SchemaAzienda)
+    @blp.response(200, AziendaSchema)
     # Aggiorna i dettagli di un'azienda esistente
     def put(self, dati_azienda, idAzienda):
         try:

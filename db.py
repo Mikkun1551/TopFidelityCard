@@ -1,6 +1,8 @@
 from flask_sqlalchemy import SQLAlchemy
 
 
+db = SQLAlchemy()
+
 id_aziende = 0
 id_tipo_aziende = 0
 
@@ -19,6 +21,3 @@ def give_id(type_op):
         global id_tipo_aziende
         id_tipo_aziende += 1
         return id_tipo_aziende
-
-
-db = SQLAlchemy()
