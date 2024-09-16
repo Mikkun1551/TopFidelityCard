@@ -1,6 +1,9 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-from db import give_id
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+
+from db import db
+from models import TipoAziendaModel
 from schemas import TipoAziendaSchema, UpdateTipoAziendaSchema
 
 # REQUEST TIPO AZIENDA
@@ -12,7 +15,7 @@ class TipoAzienda(MethodView):
     @blp.response(200, TipoAziendaSchema(many=True))
     # Ottiene tutti i tipi di azienda
     def get(self):
-        return tipi_azienda.values()
+        return TipoAziendaModel.query.all()
 
 
 @blp.route('/apiTipiAzienda/tipiAzienda/<int:idTipoAzienda>')
@@ -20,10 +23,8 @@ class TipoAzienda(MethodView):
     @blp.response(200, TipoAziendaSchema)
     # Ottiene i dettagli di un tipo di azienda specifico
     def get(self, idTipoAzienda):
-        try:
-            return tipi_azienda[idTipoAzienda]
-        except KeyError:
-            abort(404, message="Tipo azienda non trovato")
+        azienda = TipoAziendaModel.query.get_or_404(idTipoAzienda)
+        return azienda
 
 
 @blp.route('/apiTipiAzienda/createTipiAzienda')
@@ -32,13 +33,14 @@ class TipoAzienda(MethodView):
     @blp.response(201, TipoAziendaSchema)
     # Crea un nuovo tipo di azienda
     def post(self, dati_t_azienda):
-        # Controllo di eventuali duplicati rispetto alla request
-        for t_azienda in tipi_azienda.values():
-            if dati_t_azienda['categoria'] == t_azienda['categoria']:
-                abort(400, message="Il tipo azienda esiste già")
-        id_t_azienda = give_id('t_azienda')
-        t_azienda = {**dati_t_azienda, "idTipoAzienda": id_t_azienda}
-        tipi_azienda[id_t_azienda] = t_azienda
+        t_azienda = TipoAziendaModel(**dati_t_azienda)
+        try:
+            db.session.add(t_azienda)
+            db.session.commit()
+        except IntegrityError:
+            abort(400, message="Esiste già un tipo azienda con quel nome")
+        except SQLAlchemyError:
+            abort(500, message="C'è stato un errore durante l'inserimento del tipo azienda")
         return t_azienda
 
 
@@ -48,10 +50,12 @@ class TipoAzienda(MethodView):
     @blp.response(200, TipoAziendaSchema)
     # Aggiorna i dettagli di un tipo di azienda esistente
     def put(self, dati_t_azienda, idTipoAzienda):
-        try:
-            t_azienda = tipi_azienda[idTipoAzienda]
-            # Aggiornamento del dizionario
-            t_azienda |= dati_t_azienda
-            return t_azienda
-        except KeyError:
-            abort(404, message="Tipo azienda non trovato")
+        t_azienda = TipoAziendaModel.query.get(idTipoAzienda)
+        if t_azienda:
+            t_azienda.Categoria = dati_t_azienda['Categoria']
+            t_azienda.Descrizione = dati_t_azienda['Descrizione']
+        else:
+            t_azienda = TipoAziendaModel(IdTipoAzienda=idTipoAzienda, **dati_t_azienda)
+        db.session.add(t_azienda)
+        db.session.commit()
+        return t_azienda

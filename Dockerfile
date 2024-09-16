@@ -8,9 +8,9 @@ EXPOSE 5000
 WORKDIR /app
 # Selezionare cosa copiare e dove, il secondo . indica
 # la cartella corrente impostata già su WORKDIR
-COPY requirements.txt .
+COPY ./requirements.txt requirements.txt
 # Comando da eseguire prima dell'avvio del container
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
 # Il . iniziale indica tutto
 COPY . .
 # Comando da eseguire alla creazione del container, host indica

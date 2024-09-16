@@ -11,4 +11,4 @@ class AziendaModel(db.Model):
     P_IVA  = db.Column("P.IVA", db.String(10), unique=True, nullable=False)
     IdTipoAzienda = db.Column(db.Integer, db.ForeignKey("TipoAzienda.IdTipoAzienda"), unique=False, nullable=False)
 
-    tipiAzienda = db.relationship("TipoAziendaModel", back_populates='Azienda')
+    tipiAzienda = db.relationship("TipoAziendaModel", backref='Azienda')

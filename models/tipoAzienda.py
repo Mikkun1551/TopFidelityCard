@@ -7,4 +7,4 @@ class TipoAziendaModel(db.Model):
     Categoria = db.Column(db.String(255), unique=True, nullable=False)
     Descrizione  = db.Column(db.Text, unique=False, nullable=True)
 
-    aziende = db.relationship('AziendaModel', back_populates='TipoAzienda', lazy='dynamic')
+    aziende = db.relationship('AziendaModel', backref='TipoAzienda', lazy='dynamic')
