@@ -5,71 +5,53 @@ from schemas import SchemaTipoAzienda, UpdateTipoAziendaSchema
 
 # REQUEST TIPO AZIENDA
 blp = Blueprint('tipiAzienda', __name__, description='Operazioni sui tipi azienda')
+
+
 @blp.route('/apiTipiAzienda/tipiAzienda')
 class TipoAzienda(MethodView):
     @blp.response(200, SchemaTipoAzienda(many=True))
+    # Ottiene tutti i tipi di azienda
     def get(self):
-        # Ottiene tutti i tipi di azienda
-        try:
-            # Elenco di tutti i tipi di azienda
-            return tipi_azienda
-        except:
-            abort(400, message="Richiesta non valida")
+        return tipi_azienda.values()
 
 
 @blp.route('/apiTipiAzienda/tipiAzienda/<int:idTipoAzienda>')
 class TipoAzienda(MethodView):
     @blp.response(200, SchemaTipoAzienda)
+    # Ottiene i dettagli di un tipo di azienda specifico
     def get(self, idTipoAzienda):
-        # Ottiene i dettagli di un tipo di azienda specifico
         try:
-            for t_azienda in tipi_azienda:
-                if t_azienda['idTipoAzienda'] == idTipoAzienda:
-                    # Dettagli del tipo di azienda
-                    return t_azienda, 200
-            abort(404, message="Tipo di azienda non trovato")
-        except:
-            abort(400, message="Richiesta non valida")
+            return tipi_azienda[idTipoAzienda]
+        except KeyError:
+            abort(404, message="Tipo azienda non trovato")
 
 
 @blp.route('/apiTipiAzienda/createTipiAzienda')
 class TipoAzienda(MethodView):
     @blp.arguments(SchemaTipoAzienda)
     @blp.response(201, SchemaTipoAzienda)
+    # Crea un nuovo tipo di azienda
     def post(self, dati_t_azienda):
-        # Crea un nuovo tipo di azienda
-        try:
-            # Controllo di eventuali duplicati rispetto alla request
-            for t_azienda in tipi_azienda:
-                if (
-                    dati_t_azienda['Categoria'] == t_azienda['Categoria']
-                    and dati_t_azienda['Descrizione'] == t_azienda['Descrizione']
-                ):
-                    abort(400, message="Richiesta non valida")
-            new_tipo_azienda = {
-                'idTipoAzienda': give_id('t_azienda'),
-                'Categoria': dati_t_azienda['Categoria'],
-                'Descrizione': dati_t_azienda['Descrizione']
-            }
-            tipi_azienda.append(new_tipo_azienda)
-            return {'message': "Tipo di azienda creato con successo"}
-        except:
-            abort(400, message="Richiesta non valida")
+        # Controllo di eventuali duplicati rispetto alla request
+        for t_azienda in tipi_azienda.values():
+            if dati_t_azienda['categoria'] == t_azienda['categoria']:
+                abort(400, message="Il tipo azienda esiste già")
+        id_t_azienda = give_id('t_azienda')
+        t_azienda = {**dati_t_azienda, "idTipoAzienda": id_t_azienda}
+        tipi_azienda[id_t_azienda] = t_azienda
+        return t_azienda
 
 
 @blp.route('/apiTipiAzienda/updateTipiAzienda/<int:idTipoAzienda>')
 class TipoAzienda(MethodView):
     @blp.arguments(UpdateTipoAziendaSchema)
     @blp.response(200, SchemaTipoAzienda)
+    # Aggiorna i dettagli di un tipo di azienda esistente
     def put(self, dati_t_azienda, idTipoAzienda):
-        # Aggiorna i dettagli di un tipo di azienda esistente
         try:
-            # Ricerca tipo azienda nel database
-            for t_azienda in tipi_azienda:
-                if t_azienda['idTipoAzienda'] == idTipoAzienda:
-                    t_azienda['Categoria'] = dati_t_azienda['Categoria']
-                    t_azienda['Descrizione'] = dati_t_azienda['Descrizione']
-                    return {'message': "Dettagli del tipo di azienda aggiornati con successo"}
-            abort(404, message="Tipo di azienda non trovato")
-        except:
-            abort(400, message="Richiesta non valida")
+            t_azienda = tipi_azienda[idTipoAzienda]
+            # Aggiornamento del dizionario
+            t_azienda |= dati_t_azienda
+            return t_azienda
+        except KeyError:
+            abort(404, message="Tipo azienda non trovato")

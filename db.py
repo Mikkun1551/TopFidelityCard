@@ -20,6 +20,6 @@ def give_id(type_op):
 
 
 # La tabella 'azienda' contiene informazioni sulle aziende registrate nel sistema.
-aziende = []
+aziende = {}
 # La tabella 'tipoAzienda' contiene informazioni sui tipi di azienda disponibili.
-tipi_azienda = []
+tipi_azienda = {}
