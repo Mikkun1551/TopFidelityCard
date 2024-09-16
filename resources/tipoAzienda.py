@@ -7,17 +7,19 @@ from schemas import SchemaTipoAzienda, UpdateTipoAziendaSchema
 blp = Blueprint('tipiAzienda', __name__, description='Operazioni sui tipi azienda')
 @blp.route('/apiTipiAzienda/tipiAzienda')
 class TipoAzienda(MethodView):
+    @blp.response(200, SchemaTipoAzienda(many=True))
     def get(self):
         # Ottiene tutti i tipi di azienda
         try:
             # Elenco di tutti i tipi di azienda
-            return tipi_azienda, 200
+            return tipi_azienda
         except:
             abort(400, message="Richiesta non valida")
 
 
 @blp.route('/apiTipiAzienda/tipiAzienda/<int:idTipoAzienda>')
 class TipoAzienda(MethodView):
+    @blp.response(200, SchemaTipoAzienda)
     def get(self, idTipoAzienda):
         # Ottiene i dettagli di un tipo di azienda specifico
         try:
@@ -33,6 +35,7 @@ class TipoAzienda(MethodView):
 @blp.route('/apiTipiAzienda/createTipiAzienda')
 class TipoAzienda(MethodView):
     @blp.arguments(SchemaTipoAzienda)
+    @blp.response(201, SchemaTipoAzienda)
     def post(self, dati_t_azienda):
         # Crea un nuovo tipo di azienda
         try:
@@ -49,7 +52,7 @@ class TipoAzienda(MethodView):
                 'Descrizione': dati_t_azienda['Descrizione']
             }
             tipi_azienda.append(new_tipo_azienda)
-            return {'message': "Tipo di azienda creato con successo"}, 201
+            return {'message': "Tipo di azienda creato con successo"}
         except:
             abort(400, message="Richiesta non valida")
 
@@ -57,6 +60,7 @@ class TipoAzienda(MethodView):
 @blp.route('/apiTipiAzienda/updateTipiAzienda/<int:idTipoAzienda>')
 class TipoAzienda(MethodView):
     @blp.arguments(UpdateTipoAziendaSchema)
+    @blp.response(200, SchemaTipoAzienda)
     def put(self, dati_t_azienda, idTipoAzienda):
         # Aggiorna i dettagli di un tipo di azienda esistente
         try:
@@ -65,7 +69,7 @@ class TipoAzienda(MethodView):
                 if t_azienda['idTipoAzienda'] == idTipoAzienda:
                     t_azienda['Categoria'] = dati_t_azienda['Categoria']
                     t_azienda['Descrizione'] = dati_t_azienda['Descrizione']
-                    return {'message': "Dettagli del tipo di azienda aggiornati con successo"}, 200
+                    return {'message': "Dettagli del tipo di azienda aggiornati con successo"}
             abort(404, message="Tipo di azienda non trovato")
         except:
             abort(400, message="Richiesta non valida")

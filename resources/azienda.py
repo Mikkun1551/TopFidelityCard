@@ -7,24 +7,26 @@ from schemas import SchemaAzienda, UpdateAziendaSchema
 blp = Blueprint('aziende', __name__, description='Operazioni sulle aziende')
 @blp.route('/apiAzienda/aziende')
 class Azienda(MethodView):
+    @blp.response(200, SchemaAzienda(many=True))
     def get(self):
         # Ottiene tutte le azienda
         try:
             # Elenco di tutte le aziende
-            return aziende, 200
+            return aziende
         except:
             abort(400, message="Richiesta non valida")
 
 
 @blp.route('/apiAzienda/aziende/<int:idAzienda>')
 class Azienda(MethodView):
+    @blp.response(200, SchemaAzienda)
     def get(self, idAzienda):
         # Ottiene i dettagli di un'azienda specifica
         try:
             for azienda in aziende:
                 if azienda['idAzienda'] == idAzienda:
                     # Dettagli dell'azienda
-                    return azienda, 200
+                    return azienda
             abort(404, message="Azienda non trovata")
         except:
             abort(400, message="Richiesta non valida")
@@ -33,6 +35,7 @@ class Azienda(MethodView):
 @blp.route('/apiAzienda/createAziende')
 class Azienda(MethodView):
     @blp.arguments(SchemaAzienda)
+    @blp.response(201, SchemaAzienda)
     def post(self, dati_azienda):
         # Crea una nuova azienda
         try:
@@ -61,7 +64,7 @@ class Azienda(MethodView):
                         'idTipoAzienda': dati_azienda['idTipoAzienda'],
                     }
                     aziende.append(new_azienda)
-                    return {'message': "Azienda creata con successo"}, 201
+                    return {'message': "Azienda creata con successo"}
             # Se non esiste il tipo azienda inserito abort
             abort(400, message="Richiesta non valida")
         except:
@@ -71,6 +74,7 @@ class Azienda(MethodView):
 @blp.route('/apiAzienda/updateAziende/<int:idAzienda>')
 class Azienda(MethodView):
     @blp.arguments(UpdateAziendaSchema)
+    @blp.response(200, SchemaAzienda)
     def put(self, dati_azienda, idAzienda):
         # Aggiorna i dettagli di un'azienda esistente
         try:
@@ -86,7 +90,7 @@ class Azienda(MethodView):
                             azienda['Cap'] = dati_azienda['Cap']
                             azienda['PartitaIva'] = dati_azienda['PartitaIva']
                             azienda['idTipoAzienda'] = dati_azienda['idTipoAzienda']
-                            return {'message': "Dettagli dell'azienda aggiornati con successo"}, 200
+                            return {'message': "Dettagli dell'azienda aggiornati con successo"}
             abort(404, message="Azienda non trovata")
         except:
             abort(400, message="Richiesta non valida")
