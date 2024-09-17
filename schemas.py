@@ -43,6 +43,12 @@ class PlainPremioSchema(Schema):
     Soglia = fields.Int()
     CodicePremio = fields.Int(required=True)
 
+class PlainTesseraSchema(Schema):
+    IdTessera = fields.Int(dump_only=True)
+    CodiceTessera = fields.Str(required=True)
+    DataCreazione = fields.Date(required=True)
+    DataScadenza = fields.Date(required=True)
+
 
 
 # Schema per gli update
@@ -86,6 +92,12 @@ class UpdatePremioSchema(Schema):
     CodicePremio = fields.Int()
     IdCampagna = fields.Int()
 
+class UpdateTesseraSchema(Schema):
+    CodiceTessera = fields.Str()
+    DataCreazione = fields.Date()
+    DataScadenza = fields.Date()
+    IdPuntoVendita = fields.Int()
+
 
 
 # Schema a parte per le foreign key (questione di caricamento nel db)
@@ -106,3 +118,7 @@ class CampagnaSchema(PlainCampagnaSchema):
 class PremioSchema(PlainPremioSchema):
     IdCampagna = fields.Int(required=True)
     campagna = fields.Nested(CampagnaSchema(), dump_only=True)
+
+class TesseraSchema(PlainTesseraSchema):
+    IdPuntoVendita = fields.Int(required=True)
+    puntoVendita = fields.Nested(PuntoVenditaSchema(), dump_only=True)
