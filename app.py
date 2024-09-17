@@ -1,5 +1,4 @@
 import os
-
 from flask import Flask
 from flask_smorest import Api
 
@@ -10,6 +9,8 @@ from resources.azienda import blp as AziendaBlueprint
 from resources.tipoAzienda import blp as TipoAziendaBlueprint
 from resources.puntoVendita import blp as PuntoVenditaBlueprint
 from resources.tipoPuntoVendita import blp as TipoPuntoVenditaBlueprint
+from resources.campagna import blp as CampagnaBlueprint
+from resources.premio import blp as PremioBlueprint
 
 
 # Creazione di una flask app
@@ -50,5 +51,7 @@ def create_app(db_url=None):
     api.register_blueprint(TipoAziendaBlueprint)
     api.register_blueprint(PuntoVenditaBlueprint)
     api.register_blueprint(TipoPuntoVenditaBlueprint)
+    api.register_blueprint(CampagnaBlueprint)
+    api.register_blueprint(PremioBlueprint)
 
     return app
