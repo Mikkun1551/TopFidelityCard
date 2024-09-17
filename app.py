@@ -8,6 +8,8 @@ import models
 
 from resources.azienda import blp as AziendaBlueprint
 from resources.tipoAzienda import blp as TipoAziendaBlueprint
+from resources.puntoVendita import blp as PuntoVenditaBlueprint
+from resources.tipoPuntoVendita import blp as TipoPuntoVenditaBlueprint
 
 
 # Creazione di una flask app
@@ -46,5 +48,7 @@ def create_app(db_url=None):
     # Import dei blueprint da resources
     api.register_blueprint(AziendaBlueprint)
     api.register_blueprint(TipoAziendaBlueprint)
+    api.register_blueprint(PuntoVenditaBlueprint)
+    api.register_blueprint(TipoPuntoVenditaBlueprint)
 
     return app

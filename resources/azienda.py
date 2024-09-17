@@ -6,6 +6,7 @@ from db import db
 from models import AziendaModel
 from schemas import AziendaSchema, UpdateAziendaSchema
 
+
 # REQUEST AZIENDA
 blp = Blueprint('aziende', __name__, description='Operazioni sulle aziende')
 
@@ -38,7 +39,7 @@ class Azienda(MethodView):
             db.session.add(azienda)
             db.session.commit()
         except IntegrityError:
-            abort(400, message="Esiste già un'azienda con quel nome")
+            abort(400, message="Esiste già un'azienda con quel nome e/o partita iva")
         except SQLAlchemyError:
             abort(500, message="C'è stato un errore durante l'inserimento dell'azienda")
         return azienda

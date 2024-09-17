@@ -6,6 +6,7 @@ from db import db
 from models import TipoAziendaModel
 from schemas import TipoAziendaSchema, UpdateTipoAziendaSchema
 
+
 # REQUEST TIPO AZIENDA
 blp = Blueprint('tipiAzienda', __name__, description='Operazioni sui tipi azienda')
 
@@ -23,8 +24,8 @@ class TipoAzienda(MethodView):
     @blp.response(200, TipoAziendaSchema)
     # Ottiene i dettagli di un tipo di azienda specifico
     def get(self, idTipoAzienda):
-        azienda = TipoAziendaModel.query.get_or_404(idTipoAzienda)
-        return azienda
+        t_azienda = TipoAziendaModel.query.get_or_404(idTipoAzienda)
+        return t_azienda
 
 
 @blp.route('/apiTipiAzienda/createTipiAzienda')
