@@ -12,6 +12,8 @@ from resources.tipoPuntoVendita import blp as TipoPuntoVenditaBlueprint
 from resources.campagna import blp as CampagnaBlueprint
 from resources.premio import blp as PremioBlueprint
 from resources.tessera import blp as TesseraBlueprint
+from resources.consumatore import blp as ConsumatoreBlueprint
+from resources.acquisto import blp as AcquistoBlueprint
 
 
 # Creazione di una flask app
@@ -55,5 +57,7 @@ def create_app(db_url=None):
     api.register_blueprint(CampagnaBlueprint)
     api.register_blueprint(PremioBlueprint)
     api.register_blueprint(TesseraBlueprint)
+    api.register_blueprint(ConsumatoreBlueprint)
+    api.register_blueprint(AcquistoBlueprint)
 
     return app

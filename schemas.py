@@ -49,6 +49,24 @@ class PlainTesseraSchema(Schema):
     DataCreazione = fields.Date(required=True)
     DataScadenza = fields.Date(required=True)
 
+class PlainConsumatoreSchema(Schema):
+    IdConsumatore = fields.Str(dump_only=True)
+    DataTesseramento = fields.Date(required=True)
+    Nome = fields.Str(required=True)
+    Cognome = fields.Str(required=True)
+    Email = fields.Str(required=True)
+    Admin = fields.Bool(required=True)
+    Password = fields.Str(required=True)
+    CodiceFiscale = fields.Str(required=True)
+    Indirizzo = fields.Str(required=True)
+    Cap = fields.Str(required=True)
+    NumeroTelefono = fields.Str(required=True)
+
+class PlainAcquistoSchema(Schema):
+    IdAcquisto = fields.Int(dump_only=True)
+    DataAcquisto = fields.Date(required=True)
+    PuntiAcquisiti = fields.Int(required=True)
+
 
 
 # Schema per gli update
@@ -98,6 +116,24 @@ class UpdateTesseraSchema(Schema):
     DataScadenza = fields.Date()
     IdPuntoVendita = fields.Int()
 
+class UpdateConsumatoreSchema(Schema):
+    DataTesseramento = fields.Date()
+    Nome = fields.Str()
+    Cognome = fields.Str()
+    Email = fields.Str()
+    Admin = fields.Bool()
+    Password = fields.Str()
+    CodiceFiscale = fields.Str()
+    Indirizzo = fields.Str()
+    Cap = fields.Str()
+    NumeroTelefono = fields.Str()
+    IdTessera = fields.Int()
+
+class UpdateAcquistoSchema(Schema):
+    DataAcquisto = fields.Date()
+    PuntiAcquisiti = fields.Int()
+    IdConsumatore = fields.Str()
+
 
 
 # Schema a parte per le foreign key (questione di caricamento nel db)
@@ -122,3 +158,11 @@ class PremioSchema(PlainPremioSchema):
 class TesseraSchema(PlainTesseraSchema):
     IdPuntoVendita = fields.Int(required=True)
     puntoVendita = fields.Nested(PuntoVenditaSchema(), dump_only=True)
+
+class ConsumatoreSchema(PlainConsumatoreSchema):
+    IdTessera = fields.Int(required=True)
+    tessera = fields.Nested(TesseraSchema(), dump_only=True)
+
+class AcquistoSchema(PlainAcquistoSchema):
+    IdConsumatore = fields.Str(required=True)
+    consumatore = fields.Nested(ConsumatoreSchema(), dump_only=True)

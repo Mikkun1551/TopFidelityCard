@@ -5,3 +5,5 @@ from models.tipoPuntoVendita import TipoPuntoVenditaModel
 from models.campagna import CampagnaModel
 from models.premio import PremioModel
 from models.tessera import TesseraModel
+from models.consumatore import ConsumatoreModel
+from models.acquisto import AcquistoModel
