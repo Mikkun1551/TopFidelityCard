@@ -1,9 +1,11 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+# Import errori mongoDB
+from pymongo.errors import DuplicateKeyError
+from bson.objectid import ObjectId
 
-from db import db
-from models import TipoAziendaModel
+# Import del db
+from db import mongo
 from schemas import TipoAziendaSchema, UpdateTipoAziendaSchema
 
 
@@ -16,15 +18,18 @@ class TipoAzienda(MethodView):
     @blp.response(200, TipoAziendaSchema(many=True))
     # Ottiene tutti i tipi di azienda
     def get(self):
-        return TipoAziendaModel.query.all()
+        tipi_azienda = list(mongo.db.tipoAzienda.find())
+        return tipi_azienda
 
 
-@blp.route('/apiTipiAzienda/tipiAzienda/<int:idTipoAzienda>')
+@blp.route('/apiTipiAzienda/tipiAzienda/<string:idTipoAzienda>')
 class TipoAzienda(MethodView):
     @blp.response(200, TipoAziendaSchema)
     # Ottiene i dettagli di un tipo di azienda specifico
     def get(self, idTipoAzienda):
-        t_azienda = TipoAziendaModel.query.get_or_404(idTipoAzienda)
+        t_azienda = mongo.db.tipoAzienda.find_one({"_id": ObjectId(idTipoAzienda)})
+        if not t_azienda:
+            abort(404, message="Tipo azienda non trovato")
         return t_azienda
 
 
@@ -34,29 +39,25 @@ class TipoAzienda(MethodView):
     @blp.response(201, TipoAziendaSchema)
     # Crea un nuovo tipo di azienda
     def post(self, dati_t_azienda):
-        t_azienda = TipoAziendaModel(**dati_t_azienda)
         try:
-            db.session.add(t_azienda)
-            db.session.commit()
-        except IntegrityError:
+            result = mongo.db.tipoAzienda.insert_one(dati_t_azienda)
+            t_azienda = mongo.db.tipoAzienda.find_one({"_id": result.inserted_id})
+        except DuplicateKeyError:
             abort(400, message="Esiste già un tipo azienda con quel nome")
-        except SQLAlchemyError:
-            abort(500, message="C'è stato un errore durante l'inserimento del tipo azienda")
         return t_azienda
 
 
-@blp.route('/apiTipiAzienda/updateTipiAzienda/<int:idTipoAzienda>')
+@blp.route('/apiTipiAzienda/updateTipiAzienda/<string:idTipoAzienda>')
 class TipoAzienda(MethodView):
     @blp.arguments(UpdateTipoAziendaSchema)
     @blp.response(200, TipoAziendaSchema)
     # Aggiorna i dettagli di un tipo di azienda esistente
     def put(self, dati_t_azienda, idTipoAzienda):
-        t_azienda = TipoAziendaModel.query.get(idTipoAzienda)
-        if t_azienda:
-            t_azienda.Categoria = dati_t_azienda['Categoria']
-            t_azienda.Descrizione = dati_t_azienda['Descrizione']
-        else:
-            t_azienda = TipoAziendaModel(IdTipoAzienda=idTipoAzienda, **dati_t_azienda)
-        db.session.add(t_azienda)
-        db.session.commit()
+        t_azienda = mongo.db.tipoAzienda.find_one_and_update(
+            {"_id": ObjectId(idTipoAzienda)},
+            {"$set": dati_t_azienda},
+            return_document=True
+        )
+        if not t_azienda:
+            abort(404, message="Tipo azienda non trovato")
         return t_azienda

@@ -1,8 +1,7 @@
-import os
 from flask import Flask
 from flask_smorest import Api
 # Implementazione MongoDB
-from flask_pymongo import PyMongo
+from db import init_db
 
 from resources.azienda import blp as AziendaBlueprint
 from resources.tipoAzienda import blp as TipoAziendaBlueprint
@@ -16,7 +15,7 @@ from resources.acquisto import blp as AcquistoBlueprint
 
 
 # Creazione di una flask app
-def create_app(db_url=None):
+def create_app():
     app = Flask(__name__)
 
     # Propagare le eccezioni delle estensioni di flask al main app per leggerle
@@ -35,11 +34,8 @@ def create_app(db_url=None):
     # Settare l'url da dove prendere la documentazione dell'api
     app.config['OPENAPI_SWAGGER_UI_URL'] = 'https://cdn.jsdelivr.net/npm/swagger-ui-dist/'
 
-    # Connessione URI di MongoDB
-    app.config['MONGO_URI'] = db_url or os.getenv('MONGO_URI',
-    'mongodb+srv://admin:qIzjfYMqPaG4fvIM@cluster0.0eqpx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
-    # Inizializzazione PyMongo con la flask app
-    mongo = PyMongo(app)
+    # Inizializzazione connessione MongoDB
+    init_db(app)
 
     # Connessione tra flask smorest alla flask app
     api = Api(app)
