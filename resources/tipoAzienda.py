@@ -18,8 +18,8 @@ class TipoAzienda(MethodView):
     @blp.response(200, TipoAziendaSchema(many=True))
     # Ottiene tutti i tipi di azienda
     def get(self):
-        tipi_azienda = list(mongo.db.tipoAzienda.find())
-        return tipi_azienda
+        t_azienda = list(mongo.db.tipoAzienda.find())
+        return t_azienda
 
 
 @blp.route('/apiTipiAzienda/tipiAzienda/<string:idTipoAzienda>')

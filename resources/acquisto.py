@@ -1,9 +1,11 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+# Import errori mongoDB
+from pymongo.errors import DuplicateKeyError
+from bson.objectid import ObjectId
 
-from db import db
-from models import AcquistoModel
+# Import del db
+from db import mongo
 from schemas import AcquistoSchema, UpdateAcquistoSchema
 
 
@@ -16,7 +18,8 @@ class Acquisto(MethodView):
     @blp.response(200, AcquistoSchema(many=True))
     # Ottiene tutti gli acquisti
     def get(self):
-        return AcquistoModel.query.all()
+        acquisto = list(mongo.db.acquisto.find())
+        return acquisto
 
 
 @blp.route('/acquisti/<int:idAcquisto>')
@@ -24,9 +27,10 @@ class Acquisto(MethodView):
     @blp.response(200, AcquistoSchema)
     # Ottiene i dettagli di un'acquisto specifico
     def get(self, idAcquisto):
-        acquisto = AcquistoModel.query.get_or_404(idAcquisto)
+        acquisto = mongo.db.acquisto.find_one({"_id": ObjectId(idAcquisto)})
+        if not acquisto:
+            abort(404, message="Acquisto non trovato")
         return acquisto
-
 
 @blp.route('/createAcquisti')
 class Acquisto(MethodView):
@@ -34,14 +38,11 @@ class Acquisto(MethodView):
     @blp.response(201, AcquistoSchema)
     # Crea un nuovo acquisto
     def post(self, dati_acquisto):
-        acquisto = AcquistoModel(**dati_acquisto)
         try:
-            db.session.add(acquisto)
-            db.session.commit()
-        except IntegrityError:
-            abort(400, message="Errore sconosciuto ")
-        except SQLAlchemyError:
-            abort(500, message="C'è stato un errore durante l'inserimento dell'acquisto'")
+            result = mongo.db.acquisto.insert_one(dati_acquisto)
+            acquisto = mongo.db.acquisto.find_one({"_id": result.inserted_id})
+        except DuplicateKeyError:
+            abort(400, message="Esiste già un'acquisto con quel nome")
         return acquisto
 
 
@@ -51,13 +52,11 @@ class Acquisto(MethodView):
     @blp.response(200, AcquistoSchema)
     # Aggiorna i dettagli di un'acquisto esistente
     def put(self, dati_acquisto, idAcquisto):
-        acquisto = AcquistoModel.query.get(idAcquisto)
-        if acquisto:
-            acquisto.DataAcquisto = dati_acquisto['DataAcquisto']
-            acquisto.PuntiAcquisiti = dati_acquisto['PuntiAcquisiti']
-            acquisto.IdConsumatore = dati_acquisto['IdConsumatore']
-        else:
-            acquisto = AcquistoModel(IdAcquisto=idAcquisto, **dati_acquisto)
-        db.session.add(acquisto)
-        db.session.commit()
+        acquisto = mongo.db.acquisto.find_one_and_update(
+            {"_id": ObjectId(idAcquisto)},
+            {"$set": dati_acquisto},
+            return_document=True
+        )
+        if not acquisto:
+            abort(404, message="Acquisto non trovato")
         return acquisto

@@ -1,9 +1,11 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+# Import errori mongoDB
+from pymongo.errors import DuplicateKeyError
+from bson.objectid import ObjectId
 
-from db import db
-from models import CampagnaModel
+# Import del db
+from db import mongo
 from schemas import CampagnaSchema, UpdateCampagnaSchema
 
 
@@ -16,15 +18,18 @@ class Campagna(MethodView):
     @blp.response(200, CampagnaSchema(many=True))
     # Ottiene tutte le campagne
     def get(self):
-        return CampagnaModel.query.all()
+        campagna = list(mongo.db.campagna.find())
+        return campagna
 
 
-@blp.route('/campagne/<int:idCampagna>')
+@blp.route('/campagne/<string:idCampagna>')
 class Campagna(MethodView):
     @blp.response(200, CampagnaSchema)
     # Ottiene i dettagli di una campagna specifica
     def get(self, idCampagna):
-        campagna = CampagnaModel.query.get_or_404(idCampagna)
+        campagna = mongo.db.campagna.find_one({"_id": ObjectId(idCampagna)})
+        if not campagna:
+            abort(404, message="Campagna non trovata")
         return campagna
 
 
@@ -34,32 +39,25 @@ class Campagna(MethodView):
     @blp.response(201, CampagnaSchema)
     # Crea una nuova campagna
     def post(self, dati_campagna):
-        campagna = CampagnaModel(**dati_campagna)
         try:
-            db.session.add(campagna)
-            db.session.commit()
-        except IntegrityError:
+            result = mongo.db.campagna.insert_one(dati_campagna)
+            campagna = mongo.db.campagna.find_one({"_id": result.inserted_id})
+        except DuplicateKeyError:
             abort(400, message="Esiste già una campagna con quel nome")
-        except SQLAlchemyError:
-            abort(500, message="C'è stato un errore durante l'inserimento della campagna")
         return campagna
 
 
-@blp.route('/updateCampagne/<int:idCampagna>')
+@blp.route('/updateCampagne/<string:idCampagna>')
 class Campagna(MethodView):
     @blp.arguments(UpdateCampagnaSchema)
     @blp.response(200, CampagnaSchema)
     # Aggiorna i dettagli di una campagna esistente
     def put(self, dati_campagna, idCampagna):
-        campagna = CampagnaModel.query.get(idCampagna)
-        if campagna:
-            campagna.Nome = dati_campagna['Nome']
-            campagna.DataInizio = dati_campagna['DataInizio']
-            campagna.DataFine = dati_campagna['DataFine']
-            campagna.ConversionePuntiEuro = dati_campagna['ConversionePuntiEuro']
-            campagna.IdAzienda = dati_campagna['IdAzienda']
-        else:
-            campagna = CampagnaModel(IdCampagna=idCampagna, **dati_campagna)
-        db.session.add(campagna)
-        db.session.commit()
+        campagna = mongo.db.campagna.find_one_and_update(
+            {"_id": ObjectId(idCampagna)},
+            {"$set": dati_campagna},
+            return_document=True
+        )
+        if not campagna:
+            abort(404, message="Campagna non trovata")
         return campagna

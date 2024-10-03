@@ -1,9 +1,11 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+# Import errori mongoDB
+from pymongo.errors import DuplicateKeyError
+from bson.objectid import ObjectId
 
-from db import db
-from models import TipoPuntoVenditaModel
+# Import del db
+from db import mongo
 from schemas import TipoPuntoVenditaSchema, UpdateTipoPuntoVenditaSchema
 
 
@@ -16,41 +18,42 @@ class TipoPuntoVendita(MethodView):
     @blp.response(200, TipoPuntoVenditaSchema(many=True))
     # Ottiene tutti i tipi di punto vendita
     def get(self):
-        return TipoPuntoVenditaModel.query.all()
+        t_punto_vendita = list(mongo.db.tipoPuntoVendita.find())
+        return t_punto_vendita
+
 
     @blp.arguments(TipoPuntoVenditaSchema)
     @blp.response(201, TipoPuntoVenditaSchema)
     # Crea un nuovo tipo di punto vendita
     def post(self, dati_t_punto_vendita):
-        t_punto_vendita = TipoPuntoVenditaModel(**dati_t_punto_vendita)
         try:
-            db.session.add(t_punto_vendita)
-            db.session.commit()
-        except IntegrityError:
+            result = mongo.db.tipoPuntoVendita.insert_one(dati_t_punto_vendita)
+            t_punto_vendita = mongo.db.tipoPuntoVendita.find_one({"_id": result.inserted_id})
+        except DuplicateKeyError:
             abort(400, message="Esiste già un tipo punto vendita con quel nome")
-        except SQLAlchemyError:
-            abort(500, message="C'è stato un errore durante l'inserimento del tipo punto vendita")
         return t_punto_vendita
 
 
-@blp.route('/tipoPuntoVendita/<int:idTipoPuntoVendita>')
+@blp.route('/tipoPuntoVendita/<string:idTipoPuntoVendita>')
 class TipoPuntoVendita(MethodView):
     @blp.response(200, TipoPuntoVenditaSchema)
     # Ottiene i dettagli di un tipo punto vendita specifico
     def get(self, idTipoPuntoVendita):
-        t_punto_vendita = TipoPuntoVenditaModel.query.get_or_404(idTipoPuntoVendita)
+        t_punto_vendita = mongo.db.tipoPuntoVendita.find_one({"_id": ObjectId(idTipoPuntoVendita)})
+        if not t_punto_vendita:
+            abort(404, message="Tipo punto vendita non trovato")
         return t_punto_vendita
+
 
     @blp.arguments(UpdateTipoPuntoVenditaSchema)
     @blp.response(200, TipoPuntoVenditaSchema)
     # Aggiorna i dettagli di un tipo punto vendita esistente
     def put(self, dati_t_punto_vendita, idTipoPuntoVendita):
-        t_punto_vendita = TipoPuntoVenditaModel.query.get(idTipoPuntoVendita)
-        if t_punto_vendita:
-            t_punto_vendita.Nome = dati_t_punto_vendita['Nome']
-            t_punto_vendita.Descrizione = dati_t_punto_vendita['Descrizione']
-        else:
-            t_punto_vendita = TipoPuntoVenditaModel(IdTipoPuntoVendita=idTipoPuntoVendita, **dati_t_punto_vendita)
-        db.session.add(t_punto_vendita)
-        db.session.commit()
+        t_punto_vendita = mongo.db.tipoPuntoVendita.find_one_and_update(
+            {"_id": ObjectId(idTipoPuntoVendita)},
+            {"$set": dati_t_punto_vendita},
+            return_document=True
+        )
+        if not t_punto_vendita:
+            abort(404, message="Tipo punto vendita non trovato")
         return t_punto_vendita

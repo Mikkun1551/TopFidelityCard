@@ -1,9 +1,11 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+# Import errori mongoDB
+from pymongo.errors import DuplicateKeyError
+from bson.objectid import ObjectId
 
-from db import db
-from models import ConsumatoreModel
+# Import del db
+from db import mongo
 from schemas import ConsumatoreSchema, UpdateConsumatoreSchema
 
 
@@ -16,7 +18,8 @@ class Consumatore(MethodView):
     @blp.response(200, ConsumatoreSchema(many=True))
     # Ottiene tutti i consumatori
     def get(self):
-        return ConsumatoreModel.query.all()
+        consumatore = list(mongo.db.consumatore.find())
+        return consumatore
 
 
 @blp.route('/consumatori/<string:idConsumatore>')
@@ -24,7 +27,9 @@ class Consumatore(MethodView):
     @blp.response(200, ConsumatoreSchema)
     # Ottiene i dettagli di un consumatore specifico
     def get(self, idConsumatore):
-        consumatore = ConsumatoreModel.query.get_or_404(idConsumatore)
+        consumatore = mongo.db.consumatore.find_one({"_id": ObjectId(idConsumatore)})
+        if not consumatore:
+            abort(404, message="Consumatore non trovato")
         return consumatore
 
 
@@ -34,14 +39,11 @@ class Consumatore(MethodView):
     @blp.response(201, ConsumatoreSchema)
     # Crea un nuovo consumatore
     def post(self, dati_consumatore):
-        consumatore = ConsumatoreModel(**dati_consumatore)
         try:
-            db.session.add(consumatore)
-            db.session.commit()
-        except IntegrityError:
-            abort(400, message="Esiste già un consumatore con quella tessera")
-        except SQLAlchemyError:
-            abort(500, message="C'è stato un errore durante l'inserimento del consumatore")
+            result = mongo.db.consumatore.insert_one(dati_consumatore)
+            consumatore = mongo.db.consumatore.find_one({"_id": result.inserted_id})
+        except DuplicateKeyError:
+            abort(400, message="Esiste già un consumatore con quel nome")
         return consumatore
 
 
@@ -51,21 +53,11 @@ class Consumatore(MethodView):
     @blp.response(200, ConsumatoreSchema)
     # Aggiorna i dettagli di un consumatore esistente
     def put(self, dati_consumatore, idConsumatore):
-        consumatore = ConsumatoreModel.query.get(idConsumatore)
-        if consumatore:
-            consumatore.DataTesseramento = dati_consumatore['DataTesseramento']
-            consumatore.Nome = dati_consumatore['Nome']
-            consumatore.Cognome = dati_consumatore['Cognome']
-            consumatore.Email = dati_consumatore['Email']
-            consumatore.Admin = dati_consumatore['Admin']
-            consumatore.Password = dati_consumatore['Password']
-            consumatore.CodiceFiscale = dati_consumatore['CodiceFiscale']
-            consumatore.Indirizzo = dati_consumatore['Indirizzo']
-            consumatore.Cap = dati_consumatore['Cap']
-            consumatore.NumeroTelefono = dati_consumatore['NumeroTelefono']
-            consumatore.IdTessera = dati_consumatore['IdTessera']
-        else:
-            consumatore = ConsumatoreModel(idConsumatore=idConsumatore, **dati_consumatore)
-        db.session.add(consumatore)
-        db.session.commit()
+        consumatore = mongo.db.consumatore.find_one_and_update(
+            {"_id": ObjectId(idConsumatore)},
+            {"$set": dati_consumatore},
+            return_document=True
+        )
+        if not consumatore:
+            abort(404, message="Consumatore non trovato")
         return consumatore

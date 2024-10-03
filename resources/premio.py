@@ -1,9 +1,11 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+# Import errori mongoDB
+from pymongo.errors import DuplicateKeyError
+from bson.objectid import ObjectId
 
-from db import db
-from models import PremioModel
+# Import del db
+from db import mongo
 from schemas import PremioSchema, UpdatePremioSchema
 
 
@@ -16,15 +18,18 @@ class Premio(MethodView):
     @blp.response(200, PremioSchema(many=True))
     # Ottiene tutti i premi
     def get(self):
-        return PremioModel.query.all()
+        premio = list(mongo.db.premio.find())
+        return premio
 
 
-@blp.route('/premi/<int:idPremio>')
+@blp.route('/premi/<string:idPremio>')
 class Premio(MethodView):
     @blp.response(200, PremioSchema)
     # Ottiene i dettagli di un premio specifico
     def get(self, idPremio):
-        premio = PremioModel.query.get_or_404(idPremio)
+        premio = mongo.db.premio.find_one({"_id": ObjectId(idPremio)})
+        if not premio:
+            abort(404, message="Premio non trovato")
         return premio
 
 
@@ -34,34 +39,25 @@ class Premio(MethodView):
     @blp.response(201, PremioSchema)
     # Crea un nuovo premio
     def post(self, dati_premio):
-        premio = PremioModel(**dati_premio)
         try:
-            db.session.add(premio)
-            db.session.commit()
-        except IntegrityError:
-            abort(400, message="Esiste già un premio con quell'url e/o codice")
-        except SQLAlchemyError:
-            abort(500, message="C'è stato un errore durante l'inserimento del premio")
+            result = mongo.db.premio.insert_one(dati_premio)
+            premio = mongo.db.premio.find_one({"_id": result.inserted_id})
+        except DuplicateKeyError:
+            abort(400, message="Esiste già un premio con quel nome")
         return premio
 
 
-@blp.route('/updatePremi/<int:idPremio>')
+@blp.route('/updatePremi/<string:idPremio>')
 class Premio(MethodView):
     @blp.arguments(UpdatePremioSchema)
     @blp.response(200, PremioSchema)
     # Aggiorna i dettagli di un premio esistente
     def put(self, dati_premio, idPremio):
-        premio = PremioModel.query.get(idPremio)
-        if premio:
-            premio.Tipologia = dati_premio['Tipologia']
-            premio.Descrizione = dati_premio['Descrizione']
-            premio.Immagine = dati_premio['Immagine']
-            premio.Url = dati_premio['Url']
-            premio.Soglia = dati_premio['Soglia']
-            premio.CodicePremio = dati_premio['CodicePremio']
-            premio.IdCampagna = dati_premio['IdCampagna']
-        else:
-            premio = PremioModel(IdCampagna=idPremio, **dati_premio)
-        db.session.add(premio)
-        db.session.commit()
+        premio = mongo.db.premio.find_one_and_update(
+            {"_id": ObjectId(idPremio)},
+            {"$set": dati_premio},
+            return_document=True
+        )
+        if not premio:
+            abort(404, message="Premio non trovato")
         return premio
