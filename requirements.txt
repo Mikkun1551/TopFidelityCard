@@ -2,3 +2,4 @@ flask
 flask-smorest
 marshmallow
 pymongo
+flask_pymongo

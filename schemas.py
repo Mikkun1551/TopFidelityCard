@@ -12,13 +12,14 @@ class ObjectIdField(fields.Field):
     def _deserialize(self, value, attr, data, **kwargs):
         try:
             return ObjectId(value)  # Conversione stringa in ObjectId per la deserializazione
-        except Exception:
-            raise ValueError("ObjectId invalido")
+        except Exception as e:
+            return e
+            # raise ValueError("ObjectId invalido")
 
 
 # Schema base delle tabelle
 class PlainAziendaSchema(Schema):
-    IdAzienda = ObjectIdField(dump_only=True)
+    _id = ObjectIdField(dump_only=True)
     Nome = fields.Str(required=True)
     Regione = fields.Str(required=True)
     Citta = fields.Str(required=True)
@@ -26,31 +27,31 @@ class PlainAziendaSchema(Schema):
     P_IVA = fields.Str(required=True)
 
 class TipoAziendaSchema(Schema):
-    IdTipoAzienda = ObjectIdField(dump_only=True)
+    _id = ObjectIdField(dump_only=True)
     Categoria = fields.Str(required=True)
     Descrizione = fields.Str()
 
 class PlainPuntoVenditaSchema(Schema):
-    IdPuntoVendita = ObjectIdField(dump_only=True)
+    _id = ObjectIdField(dump_only=True)
     Nome = fields.Str(required=True)
     Indirizzo = fields.Str(required=True)
     Citta = fields.Str(required=True)
     Cap = fields.Str(required=True)
 
 class TipoPuntoVenditaSchema(Schema):
-    IdTipoPuntoVendita = ObjectIdField(dump_only=True)
+    _id = ObjectIdField(dump_only=True)
     Nome = fields.Str(required=True)
     Descrizione = fields.Str()
 
 class PlainCampagnaSchema(Schema):
-    IdCampagna = ObjectIdField(dump_only=True)
+    _id = ObjectIdField(dump_only=True)
     Nome = fields.Str(required=True)
-    DataInizio = fields.Date(required=True)
-    DataFine = fields.Date(required=True)
+    DataInizio = fields.DateTime(required=True)
+    DataFine = fields.DateTime(required=True)
     ConversionePuntiEuro = fields.Int(required=True)
 
 class PlainPremioSchema(Schema):
-    IdPremio = ObjectIdField(dump_only=True)
+    _id = ObjectIdField(dump_only=True)
     Tipologia = fields.Str(required=True)
     Descrizione = fields.Str(required=True)
     Immagine = fields.Str()
@@ -59,14 +60,14 @@ class PlainPremioSchema(Schema):
     CodicePremio = fields.Int(required=True)
 
 class PlainTesseraSchema(Schema):
-    IdTessera = ObjectIdField(dump_only=True)
+    _id = ObjectIdField(dump_only=True)
     CodiceTessera = fields.Str(required=True)
-    DataCreazione = fields.Date(required=True)
-    DataScadenza = fields.Date(required=True)
+    DataCreazione = fields.DateTime(required=True)
+    DataScadenza = fields.DateTime(required=True)
 
 class PlainConsumatoreSchema(Schema):
-    IdConsumatore = ObjectIdField(dump_only=True)
-    DataTesseramento = fields.Date(required=True)
+    _id = ObjectIdField(dump_only=True)
+    DataTesseramento = fields.DateTime(required=True)
     Nome = fields.Str(required=True)
     Cognome = fields.Str(required=True)
     Email = fields.Str(required=True)
@@ -78,8 +79,8 @@ class PlainConsumatoreSchema(Schema):
     NumeroTelefono = fields.Str(required=True)
 
 class PlainAcquistoSchema(Schema):
-    IdAcquisto = ObjectIdField(dump_only=True)
-    DataAcquisto = fields.Date(required=True)
+    _id = ObjectIdField(dump_only=True)
+    DataAcquisto = fields.DateTime(required=True)
     PuntiAcquisiti = fields.Int(required=True)
 
 
@@ -111,8 +112,8 @@ class UpdateTipoPuntoVenditaSchema(Schema):
 
 class UpdateCampagnaSchema(Schema):
     Nome = fields.Str()
-    DataInizio = fields.Date()
-    DataFine = fields.Date()
+    DataInizio = fields.DateTime()
+    DataFine = fields.DateTime()
     ConversionePuntiEuro = fields.Int()
     IdAzienda = ObjectIdField()
 
@@ -127,12 +128,12 @@ class UpdatePremioSchema(Schema):
 
 class UpdateTesseraSchema(Schema):
     CodiceTessera = fields.Str()
-    DataCreazione = fields.Date()
-    DataScadenza = fields.Date()
+    DataCreazione = fields.DateTime()
+    DataScadenza = fields.DateTime()
     IdPuntoVendita = ObjectIdField()
 
 class UpdateConsumatoreSchema(Schema):
-    DataTesseramento = fields.Date()
+    DataTesseramento = fields.DateTime()
     Nome = fields.Str()
     Cognome = fields.Str()
     Email = fields.Str()
@@ -145,7 +146,7 @@ class UpdateConsumatoreSchema(Schema):
     IdTessera = ObjectIdField()
 
 class UpdateAcquistoSchema(Schema):
-    DataAcquisto = fields.Date()
+    DataAcquisto = fields.DateTime()
     PuntiAcquisiti = fields.Int()
     IdConsumatore = ObjectIdField()
 

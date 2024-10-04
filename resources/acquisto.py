@@ -1,8 +1,8 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-# Import errori mongoDB
-from pymongo.errors import DuplicateKeyError
+# from pymongo.errors import DuplicateKeyError
 from bson.objectid import ObjectId
+from bson.errors import InvalidId, InvalidDocument
 
 # Import del db
 from db import mongo
@@ -18,7 +18,7 @@ class Acquisto(MethodView):
     @blp.response(200, AcquistoSchema(many=True))
     # Ottiene tutti gli acquisti
     def get(self):
-        acquisto = list(mongo.db.acquisto.find())
+        acquisto = list(mongo.cx['TopFidelityCard'].acquisto.find())
         return acquisto
 
 
@@ -27,10 +27,14 @@ class Acquisto(MethodView):
     @blp.response(200, AcquistoSchema)
     # Ottiene i dettagli di un'acquisto specifico
     def get(self, idAcquisto):
-        acquisto = mongo.db.acquisto.find_one({"_id": ObjectId(idAcquisto)})
-        if not acquisto:
-            abort(404, message="Acquisto non trovato")
-        return acquisto
+        try:
+            acquisto = mongo.cx['TopFidelityCard'].acquisto.find_one({"_id": ObjectId(idAcquisto)})
+            if acquisto is None:
+                abort(404, message="Acquisto non trovato")
+            return acquisto
+        except InvalidId:
+            abort(400, message="Id non valido, riprova")
+
 
 @blp.route('/createAcquisti')
 class Acquisto(MethodView):
@@ -38,11 +42,11 @@ class Acquisto(MethodView):
     @blp.response(201, AcquistoSchema)
     # Crea un nuovo acquisto
     def post(self, dati_acquisto):
-        try:
-            result = mongo.db.acquisto.insert_one(dati_acquisto)
-            acquisto = mongo.db.acquisto.find_one({"_id": result.inserted_id})
-        except DuplicateKeyError:
-            abort(400, message="Esiste già un'acquisto con quel nome")
+        #try:
+        result = mongo.cx['TopFidelityCard'].acquisto.insert_one(dati_acquisto)
+        acquisto = mongo.cx['TopFidelityCard'].acquisto.find_one({"_id": result.inserted_id})
+        #except DuplicateKeyError:
+        #    abort(400, message="Esiste già un'acquisto con quel nome")
         return acquisto
 
 
@@ -52,11 +56,18 @@ class Acquisto(MethodView):
     @blp.response(200, AcquistoSchema)
     # Aggiorna i dettagli di un'acquisto esistente
     def put(self, dati_acquisto, idAcquisto):
-        acquisto = mongo.db.acquisto.find_one_and_update(
-            {"_id": ObjectId(idAcquisto)},
-            {"$set": dati_acquisto},
-            return_document=True
-        )
-        if not acquisto:
-            abort(404, message="Acquisto non trovato")
-        return acquisto
+        try:
+            acquisto = mongo.cx['TopFidelityCard'].acquisto.find_one_and_update(
+                {"_id": ObjectId(idAcquisto)},
+                {"$set": dati_acquisto},
+                return_document=True
+            )
+            if not acquisto:
+                abort(404, message="Acquisto non trovato")
+            return acquisto
+        except InvalidDocument:
+            abort(400,
+                  message="IdConsumatore non valido, riprova")
+        except InvalidId:
+            abort(400,
+                  message="Id acquisto non valido, riprova")

@@ -1,8 +1,8 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-# Import errori mongoDB
-from pymongo.errors import DuplicateKeyError
+# from pymongo.errors import DuplicateKeyError
 from bson.objectid import ObjectId
+from bson.errors import InvalidId, InvalidDocument
 
 # Import del db
 from db import mongo
@@ -18,7 +18,7 @@ class Premio(MethodView):
     @blp.response(200, PremioSchema(many=True))
     # Ottiene tutti i premi
     def get(self):
-        premio = list(mongo.db.premio.find())
+        premio = list(mongo.cx['TopFidelityCard'].premio.find())
         return premio
 
 
@@ -27,10 +27,13 @@ class Premio(MethodView):
     @blp.response(200, PremioSchema)
     # Ottiene i dettagli di un premio specifico
     def get(self, idPremio):
-        premio = mongo.db.premio.find_one({"_id": ObjectId(idPremio)})
-        if not premio:
-            abort(404, message="Premio non trovato")
-        return premio
+        try:
+            premio = mongo.cx['TopFidelityCard'].premio.find_one({"_id": ObjectId(idPremio)})
+            if premio is None:
+                abort(404, message="Premio non trovato")
+            return premio
+        except InvalidId:
+            abort(400, message="Premio non trovato")
 
 
 @blp.route('/createPremi')
@@ -39,11 +42,11 @@ class Premio(MethodView):
     @blp.response(201, PremioSchema)
     # Crea un nuovo premio
     def post(self, dati_premio):
-        try:
-            result = mongo.db.premio.insert_one(dati_premio)
-            premio = mongo.db.premio.find_one({"_id": result.inserted_id})
-        except DuplicateKeyError:
-            abort(400, message="Esiste già un premio con quel nome")
+        #try:
+        result = mongo.cx['TopFidelityCard'].premio.insert_one(dati_premio)
+        premio = mongo.cx['TopFidelityCard'].premio.find_one({"_id": result.inserted_id})
+        #except DuplicateKeyError:
+        #    abort(400, message="Esiste già un premio con quel nome")
         return premio
 
 
@@ -53,11 +56,18 @@ class Premio(MethodView):
     @blp.response(200, PremioSchema)
     # Aggiorna i dettagli di un premio esistente
     def put(self, dati_premio, idPremio):
-        premio = mongo.db.premio.find_one_and_update(
-            {"_id": ObjectId(idPremio)},
-            {"$set": dati_premio},
-            return_document=True
-        )
-        if not premio:
-            abort(404, message="Premio non trovato")
-        return premio
+        try:
+            premio = mongo.cx['TopFidelityCard'].premio.find_one_and_update(
+                {"_id": ObjectId(idPremio)},
+                {"$set": dati_premio},
+                return_document=True
+            )
+            if not premio:
+                abort(404, message="Premio non trovato")
+            return premio
+        except InvalidDocument:
+            abort(400,
+                  message="IdCampagna non valido, riprova")
+        except InvalidId:
+            abort(400,
+                  message="Id premio non valido, riprova")
