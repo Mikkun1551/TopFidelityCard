@@ -1,6 +1,6 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-# from pymongo.errors import DuplicateKeyError
+from pymongo.errors import DuplicateKeyError
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
 
@@ -42,11 +42,15 @@ class TipoAzienda(MethodView):
     @blp.response(201, TipoAziendaSchema)
     # Crea un nuovo tipo di azienda
     def post(self, dati_t_azienda):
-        #try:
-        result = mongo.cx['TopFidelityCard'].tipoAzienda.insert_one(dati_t_azienda)
-        t_azienda = mongo.cx['TopFidelityCard'].tipoAzienda.find_one({"_id": result.inserted_id})
-        #except DuplicateKeyError:
-        #    abort(400, message="Esiste già un tipo azienda con quel nome")
+        try:
+            result = mongo.cx['TopFidelityCard'].tipoAzienda.insert_one(dati_t_azienda)
+            t_azienda = mongo.cx['TopFidelityCard'].tipoAzienda.find_one({"_id": result.inserted_id})
+        except DuplicateKeyError as e:
+            key_pattern = e.details.get("keyPattern")
+            field_error = list(key_pattern.keys())
+            print(field_error)
+            abort(400,
+                  message=f"Richiesta non valida, '{field_error[0]}' già esistente")
         return t_azienda
 
 
