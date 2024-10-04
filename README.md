@@ -1,16 +1,15 @@
-# TopFidelityCard
+# TopFidelityCard - MongoDB
 Il progetto prevede la realizzazione di un applicativo che consenta di gestire i clienti, i loro acquisti e la tessera
-a loro associata.
+a loro associata usando MongoDB come database.
 
-Al momento l'applicativo permette di usare tutte le API del documento tecnico, ad eccezione di tutte le DELETE a causa 
-della poca chiarezza del documento riguardo le conseguenze della delete sulle altre tabelle e i vincoli NOT NULL 
-su di essi.
+L'applicativo permette di usare tutte le API del documento tecnico, ad eccezione di tutte le DELETE a causa 
+della poca chiarezza del documento nel determinare se eseguire una delete normale o una "logica", ossia far sparire l'oggetto
+dalle query risultando ancora fisicamente nel database ma mai visualizzabile o interagibile. 
+Manca anche la gestione dei token per le operazioni che lo richiedono e l'eventuale scelta di rendere alcuni parametri UNIQUE o no.
 
-Manca anche la gestione dei token per le operazioni che lo richiedono e il settaggio delle unique è stato arbitrario 
-visto che nel documento tecnico non si fa riferimento ad esse.
+Per il database si usa MongoDB e uno schema per mantenere un'integrità dei tipi di dato dei documenti.
 
-Per il database si usa SQLite in locale in forma persistente, avendo un dockerfile apposito per l'esecuzione 
-dell'applicativo, se è necessario svuotare il database basta cancellare il container e crearne un altro. 
+E' possibile eseguire l'applicativo tramite container Docker.
 
 Per creare l'immagine:
 
@@ -18,8 +17,8 @@ Per creare l'immagine:
 
 Per creare il container:
 
-```docker run -p 5005:5000 NOME_IMAGE```
+```docker run -p 5000:5000 NOME_IMAGE```
 
 Se vuoi creare un container sincronizzato con la cartella locale (windows):
 
-```docker run -dp 5005:5000 -w /app -v "/c/PATH_ALLA_CARTELLA_DELLA_APP:/app" NOME_IMAGE```
+```docker run -dp 5000:5000 -w /app -v "/c/PATH_ALLA_CARTELLA_DELLA_APP:/app" NOME_IMAGE```
