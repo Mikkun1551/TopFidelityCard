@@ -45,12 +45,12 @@ class TipoAzienda(MethodView):
         try:
             result = mongo.cx['TopFidelityCard'].tipoAzienda.insert_one(dati_t_azienda)
             t_azienda = mongo.cx['TopFidelityCard'].tipoAzienda.find_one({"_id": result.inserted_id})
+            return t_azienda
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
             field_error = list(key_pattern.keys())
             abort(400,
                   message=f"Richiesta non valida, '{field_error[0]}' già esistente")
-        return t_azienda
 
 
 @blp.route('/apiTipiAzienda/updateTipiAzienda/<string:idTipoAzienda>')

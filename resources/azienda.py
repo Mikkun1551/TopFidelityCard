@@ -43,14 +43,17 @@ class Azienda(MethodView):
     # Crea una nuova azienda
     def post(self, dati_azienda):
         try:
+            check = mongo.cx['TopFidelityCard'].tipoAzienda.find_one({"_id": ObjectId(dati_azienda['IdTipoAzienda'])})
+            if not check:
+                abort(404, message="Tipo azienda inserito inesistente")
             result = mongo.cx['TopFidelityCard'].azienda.insert_one(dati_azienda)
             azienda = mongo.cx['TopFidelityCard'].azienda.find_one({"_id": result.inserted_id})
+            return azienda
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
             field_error = list(key_pattern.keys())
             abort(400,
                   message=f"Richiesta non valida, '{field_error[0]}' già esistente")
-        return azienda
 
 
 @blp.route('/apiAzienda/updateAziende/<string:idAzienda>')
