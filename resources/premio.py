@@ -1,6 +1,5 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-# from pymongo.errors import DuplicateKeyError
 from bson.objectid import ObjectId
 from bson.errors import InvalidId, InvalidDocument
 
@@ -42,11 +41,8 @@ class Premio(MethodView):
     @blp.response(201, PremioSchema)
     # Crea un nuovo premio
     def post(self, dati_premio):
-        #try:
         result = mongo.cx['TopFidelityCard'].premio.insert_one(dati_premio)
         premio = mongo.cx['TopFidelityCard'].premio.find_one({"_id": result.inserted_id})
-        #except DuplicateKeyError:
-        #    abort(400, message="Esiste già un premio con quel nome")
         return premio
 
 

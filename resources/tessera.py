@@ -1,6 +1,6 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-#from pymongo.errors import DuplicateKeyError
+from pymongo.errors import DuplicateKeyError
 from bson.objectid import ObjectId
 from bson.errors import InvalidId, InvalidDocument
 
@@ -42,11 +42,14 @@ class Tessera(MethodView):
     @blp.response(201, TesseraSchema)
     # Crea una nuova tessera
     def post(self, dati_tessera):
-        #try:
-        result = mongo.cx['TopFidelityCard'].tessera.insert_one(dati_tessera)
-        tessera = mongo.cx['TopFidelityCard'].tessera.find_one({"_id": result.inserted_id})
-        #except DuplicateKeyError:
-        #    abort(400, message="Esiste già una tessera con quel nome")
+        try:
+            result = mongo.cx['TopFidelityCard'].tessera.insert_one(dati_tessera)
+            tessera = mongo.cx['TopFidelityCard'].tessera.find_one({"_id": result.inserted_id})
+        except DuplicateKeyError as e:
+            key_pattern = e.details.get("keyPattern")
+            field_error = list(key_pattern.keys())
+            abort(400,
+                  message=f"Richiesta non valida, '{field_error[0]}' già esistente")
         return tessera
 
 
@@ -65,6 +68,11 @@ class Tessera(MethodView):
             if not tessera:
                 abort(404, message="Tessera non trovata")
             return tessera
+        except DuplicateKeyError as e:
+            key_pattern = e.details.get("keyPattern")
+            field_error = list(key_pattern.keys())
+            abort(400,
+                  message=f"Richiesta non valida, '{field_error[0]}' già esistente")
         except InvalidDocument:
             abort(400,
                   message="IdPuntoVendita non valido, riprova")

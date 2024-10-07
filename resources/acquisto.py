@@ -1,6 +1,5 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-# from pymongo.errors import DuplicateKeyError
 from bson.objectid import ObjectId
 from bson.errors import InvalidId, InvalidDocument
 
@@ -42,11 +41,8 @@ class Acquisto(MethodView):
     @blp.response(201, AcquistoSchema)
     # Crea un nuovo acquisto
     def post(self, dati_acquisto):
-        #try:
         result = mongo.cx['TopFidelityCard'].acquisto.insert_one(dati_acquisto)
         acquisto = mongo.cx['TopFidelityCard'].acquisto.find_one({"_id": result.inserted_id})
-        #except DuplicateKeyError:
-        #    abort(400, message="Esiste già un'acquisto con quel nome")
         return acquisto
 
 

@@ -1,6 +1,6 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-# from pymongo.errors import DuplicateKeyError
+from pymongo.errors import DuplicateKeyError
 from bson.objectid import ObjectId
 from bson.errors import InvalidId, InvalidDocument
 
@@ -42,11 +42,14 @@ class Azienda(MethodView):
     @blp.response(201, AziendaSchema)
     # Crea una nuova azienda
     def post(self, dati_azienda):
-        #try:
-        result = mongo.cx['TopFidelityCard'].azienda.insert_one(dati_azienda)
-        azienda = mongo.cx['TopFidelityCard'].azienda.find_one({"_id": result.inserted_id})
-        #except DuplicateKeyError:
-        #    abort(400, message="Esiste già un'azienda con quel nome")
+        try:
+            result = mongo.cx['TopFidelityCard'].azienda.insert_one(dati_azienda)
+            azienda = mongo.cx['TopFidelityCard'].azienda.find_one({"_id": result.inserted_id})
+        except DuplicateKeyError as e:
+            key_pattern = e.details.get("keyPattern")
+            field_error = list(key_pattern.keys())
+            abort(400,
+                  message=f"Richiesta non valida, '{field_error[0]}' già esistente")
         return azienda
 
 
@@ -65,6 +68,11 @@ class Azienda(MethodView):
             if not azienda:
                 abort(404, message="Azienda non trovata")
             return azienda
+        except DuplicateKeyError as e:
+            key_pattern = e.details.get("keyPattern")
+            field_error = list(key_pattern.keys())
+            abort(400,
+                  message=f"Richiesta non valida, '{field_error[0]}' già esistente")
         except InvalidDocument:
             abort(400,
                   message="IdTipoAzienda non valido, riprova")

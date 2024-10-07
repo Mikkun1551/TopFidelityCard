@@ -1,6 +1,6 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-# from pymongo.errors import DuplicateKeyError
+from pymongo.errors import DuplicateKeyError
 from bson.objectid import ObjectId
 from bson.errors import InvalidId, InvalidDocument
 
@@ -26,11 +26,14 @@ class PuntoVendita(MethodView):
     @blp.response(201, PuntoVenditaSchema)
     # Crea un nuovo punto vendita
     def post(self, dati_punto_vendita):
-        #try:
-        result = mongo.cx['TopFidelityCard'].puntoVendita.insert_one(dati_punto_vendita)
-        punto_vendita = mongo.cx['TopFidelityCard'].puntoVendita.find_one({"_id": result.inserted_id})
-        #except DuplicateKeyError:
-        #    abort(400, message="Esiste già un punto vendita con quel nome")
+        try:
+            result = mongo.cx['TopFidelityCard'].puntoVendita.insert_one(dati_punto_vendita)
+            punto_vendita = mongo.cx['TopFidelityCard'].puntoVendita.find_one({"_id": result.inserted_id})
+        except DuplicateKeyError as e:
+            key_pattern = e.details.get("keyPattern")
+            field_error = list(key_pattern.keys())
+            abort(400,
+                  message=f"Richiesta non valida, '{field_error[0]}' già esistente")
         return punto_vendita
 
 
@@ -61,6 +64,11 @@ class PuntoVendita(MethodView):
             if not punto_vendita:
                 abort(404, message="Punto vendita non trovato")
             return punto_vendita
+        except DuplicateKeyError as e:
+            key_pattern = e.details.get("keyPattern")
+            field_error = list(key_pattern.keys())
+            abort(400,
+                  message=f"Richiesta non valida, '{field_error[0]}' già esistente")
         except InvalidDocument:
             abort(400,
                   message="IdAzienda e/o idTipoPuntoVendita "

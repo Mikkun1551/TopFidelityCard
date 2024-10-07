@@ -1,6 +1,6 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-# from pymongo.errors import DuplicateKeyError
+from pymongo.errors import DuplicateKeyError
 from bson.objectid import ObjectId
 from bson.errors import InvalidId, InvalidDocument
 
@@ -42,11 +42,24 @@ class Consumatore(MethodView):
     @blp.response(201, ConsumatoreSchema)
     # Crea un nuovo consumatore
     def post(self, dati_consumatore):
-        #try:
-        result = mongo.cx['TopFidelityCard'].consumatore.insert_one(dati_consumatore)
-        consumatore = mongo.cx['TopFidelityCard'].consumatore.find_one({"_id": result.inserted_id})
-        #except DuplicateKeyError:
-        #    abort(400, message="Esiste già un consumatore con quel nome")
+        try:
+            result = mongo.cx['TopFidelityCard'].consumatore.insert_one(dati_consumatore)
+            consumatore = mongo.cx['TopFidelityCard'].consumatore.find_one({"_id": result.inserted_id})
+        except DuplicateKeyError as e:
+            key_pattern = e.details.get("keyPattern")
+            field_error = list(key_pattern.keys())
+            if field_error[0] == 'Nome':
+                abort(400,
+                      message=f"Richiesta non valida, quell'utente è già associato alla tessera specificata")
+            elif field_error[0] == 'Email':
+                abort(400,
+                      message=f"Richiesta non valida, quella email è già associata alla tessera specificata")
+            elif field_error[0] == 'IdTessera':
+                abort(400,
+                      message=f"Richiesta non valida, può esistere un solo admin per tessera")
+            else:
+                abort(400,
+                      message=f"Richiesta non valida, errore non noto")
         return consumatore
 
 
@@ -65,6 +78,21 @@ class Consumatore(MethodView):
             if not consumatore:
                 abort(404, message="Consumatore non trovato")
             return consumatore
+        except DuplicateKeyError as e:
+            key_pattern = e.details.get("keyPattern")
+            field_error = list(key_pattern.keys())
+            if field_error[0] == 'Nome':
+                abort(400,
+                      message=f"Richiesta non valida, quell'utente è già associato alla tessera specificata")
+            elif field_error[0] == 'Email':
+                abort(400,
+                      message=f"Richiesta non valida, quella email è già associata alla tessera specificata")
+            elif field_error[0] == 'IdTessera':
+                abort(400,
+                      message=f"Richiesta non valida, può esistere un solo admin per tessera")
+            else:
+                abort(400,
+                      message=f"Richiesta non valida, errore non noto")
         except InvalidDocument:
             abort(400,
                   message="IdTessera non valido, riprova")

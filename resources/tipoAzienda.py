@@ -48,7 +48,6 @@ class TipoAzienda(MethodView):
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
             field_error = list(key_pattern.keys())
-            print(field_error)
             abort(400,
                   message=f"Richiesta non valida, '{field_error[0]}' già esistente")
         return t_azienda
@@ -69,5 +68,10 @@ class TipoAzienda(MethodView):
             if not t_azienda:
                 abort(404, message="Tipo azienda non trovato")
             return t_azienda
+        except DuplicateKeyError as e:
+            key_pattern = e.details.get("keyPattern")
+            field_error = list(key_pattern.keys())
+            abort(400,
+                  message=f"Richiesta non valida, '{field_error[0]}' già esistente")
         except InvalidId:
             abort(400, message="Id tipo azienda non valido, riprova")

@@ -1,6 +1,6 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-# from pymongo.errors import DuplicateKeyError
+from pymongo.errors import DuplicateKeyError
 from bson.objectid import ObjectId
 from bson.errors import InvalidId, InvalidDocument
 
@@ -42,11 +42,14 @@ class Campagna(MethodView):
     @blp.response(201, CampagnaSchema)
     # Crea una nuova campagna
     def post(self, dati_campagna):
-        #try:
-        result = mongo.cx['TopFidelityCard'].campagna.insert_one(dati_campagna)
-        campagna = mongo.cx['TopFidelityCard'].campagna.find_one({"_id": result.inserted_id})
-        #except DuplicateKeyError:
-        #    abort(400, message="Esiste già una campagna con quel nome")
+        try:
+            result = mongo.cx['TopFidelityCard'].campagna.insert_one(dati_campagna)
+            campagna = mongo.cx['TopFidelityCard'].campagna.find_one({"_id": result.inserted_id})
+        except DuplicateKeyError as e:
+            key_pattern = e.details.get("keyPattern")
+            field_error = list(key_pattern.keys())
+            abort(400,
+                  message=f"Richiesta non valida, '{field_error[0]}' già esistente")
         return campagna
 
 
@@ -65,6 +68,11 @@ class Campagna(MethodView):
             if not campagna:
                 abort(404, message="Campagna non trovata")
             return campagna
+        except DuplicateKeyError as e:
+            key_pattern = e.details.get("keyPattern")
+            field_error = list(key_pattern.keys())
+            abort(400,
+                  message=f"Richiesta non valida, '{field_error[0]}' già esistente")
         except InvalidDocument:
             abort(400,
                   message="IdAzienda non valido, riprova")

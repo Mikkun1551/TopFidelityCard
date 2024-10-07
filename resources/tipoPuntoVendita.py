@@ -1,6 +1,6 @@
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
-# from pymongo.errors import DuplicateKeyError
+from pymongo.errors import DuplicateKeyError
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
 
@@ -26,11 +26,14 @@ class TipoPuntoVendita(MethodView):
     @blp.response(201, TipoPuntoVenditaSchema)
     # Crea un nuovo tipo di punto vendita
     def post(self, dati_t_punto_vendita):
-        #try:
-        result = mongo.cx['TopFidelityCard'].tipoPuntoVendita.insert_one(dati_t_punto_vendita)
-        t_punto_vendita = mongo.cx['TopFidelityCard'].tipoPuntoVendita.find_one({"_id": result.inserted_id})
-        #except DuplicateKeyError:
-        #    abort(400, message="Esiste già un tipo punto vendita con quel nome")
+        try:
+            result = mongo.cx['TopFidelityCard'].tipoPuntoVendita.insert_one(dati_t_punto_vendita)
+            t_punto_vendita = mongo.cx['TopFidelityCard'].tipoPuntoVendita.find_one({"_id": result.inserted_id})
+        except DuplicateKeyError as e:
+            key_pattern = e.details.get("keyPattern")
+            field_error = list(key_pattern.keys())
+            abort(400,
+                  message=f"Richiesta non valida, '{field_error[0]}' già esistente")
         return t_punto_vendita
 
 
@@ -61,5 +64,10 @@ class TipoPuntoVendita(MethodView):
             if not t_punto_vendita:
                 abort(404, message="Tipo punto vendita non trovato")
             return t_punto_vendita
+        except DuplicateKeyError as e:
+            key_pattern = e.details.get("keyPattern")
+            field_error = list(key_pattern.keys())
+            abort(400,
+                  message=f"Richiesta non valida, '{field_error[0]}' già esistente")
         except InvalidId:
             abort(400, message="Id non valido, riprova")
