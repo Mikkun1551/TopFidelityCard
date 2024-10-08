@@ -6,7 +6,7 @@ from bson.errors import InvalidId, InvalidDocument
 
 # Import del db
 from db import mongo
-from schemas import ConsumatoreSchema, UpdateConsumatoreSchema
+from schemas import ConsumatoreSchema, UpdateConsumatoreSchema, DeleteConsumatoreSchema
 
 
 # REQUEST CONSUMATORE
@@ -18,8 +18,12 @@ class Consumatore(MethodView):
     @blp.response(200, ConsumatoreSchema(many=True))
     # Ottiene tutti i consumatori
     def get(self):
-        consumatore = list(mongo.cx['TopFidelityCard'].consumatore.find())
-        return consumatore
+        try:
+            consumatore = list(mongo.cx['TopFidelityCard'].consumatore.find({"Eliminato": False}))
+            return consumatore
+        except Exception as e:
+            abort(400,
+                  message=f"Errore non previsto: {e}")
 
 
 @blp.route('/consumatori/<string:idConsumatore>')
@@ -28,7 +32,8 @@ class Consumatore(MethodView):
     # Ottiene i dettagli di un consumatore specifico
     def get(self, idConsumatore):
         try:
-            consumatore = mongo.cx['TopFidelityCard'].consumatore.find_one({"_id": ObjectId(idConsumatore)})
+            consumatore = mongo.cx['TopFidelityCard'].consumatore.find_one(
+                {"$and": [{"_id": ObjectId(idConsumatore)}, {"Eliminato": False}]})
             if consumatore is None:
                 abort(404,
                       message="Consumatore non trovato")
@@ -36,6 +41,9 @@ class Consumatore(MethodView):
         except InvalidId:
             abort(400,
                   message="Id non valido, riprova")
+        # except Exception as e:
+        #     abort(400,
+        #           message=f"Errore non previsto: {e}")
 
 
 @blp.route('/consumatori')
@@ -46,13 +54,16 @@ class Consumatore(MethodView):
     def post(self, dati_consumatore):
         try:
             # Controllo se l'id inserito nel json della request esiste
-            check = mongo.cx['TopFidelityCard'].tessera.find_one({"_id": ObjectId(dati_consumatore['IdTessera'])})
+            check = mongo.cx['TopFidelityCard'].tessera.find_one(
+                {"$and": [{"_id": ObjectId(dati_consumatore['IdTessera'])}, {"Eliminato": False}]})
             if not check:
                 abort(404,
                       message="Tessera inserita inesistente")
 
+            dati_consumatore['Eliminato'] = False
             result = mongo.cx['TopFidelityCard'].consumatore.insert_one(dati_consumatore)
-            consumatore = mongo.cx['TopFidelityCard'].consumatore.find_one({"_id": result.inserted_id})
+            consumatore = mongo.cx['TopFidelityCard'].consumatore.find_one(
+                {"$and": [{"_id": result.inserted_id}, {"Eliminato": False}]})
             return consumatore
         except TypeError:
             abort(400,
@@ -72,6 +83,10 @@ class Consumatore(MethodView):
             else:
                 abort(400,
                       message=f"Richiesta non valida, errore non noto")
+        # Se il codice entra dentro "if not check" invece di causare abort va per except exception
+        # except Exception as e:
+        #     abort(400,
+        #           message=f"Errore non previsto: {e}")
 
 
 @blp.route('/consumatori/<string:idConsumatore>')
@@ -82,16 +97,16 @@ class Consumatore(MethodView):
     def put(self, dati_consumatore, idConsumatore):
         try:
             # Controllo se l'id inserito nel json della request esiste
-            check = mongo.cx['TopFidelityCard'].tessera.find_one({"_id": ObjectId(dati_consumatore['IdTessera'])})
+            check = mongo.cx['TopFidelityCard'].tessera.find_one(
+                {"$and": [{"_id": ObjectId(dati_consumatore['IdTessera'])}, {"Eliminato": False}]})
             if not check:
                 abort(404,
                       message="Tessera inserita inesistente")
 
             consumatore = mongo.cx['TopFidelityCard'].consumatore.find_one_and_update(
-                {"_id": ObjectId(idConsumatore)},
+                {"$and": [{"_id": ObjectId(idConsumatore)}, {"Eliminato": False}]},
                 {"$set": dati_consumatore},
-                return_document=True
-            )
+                return_document=True)
             if not consumatore:
                 abort(404,
                       message="Consumatore non trovato")
@@ -120,3 +135,42 @@ class Consumatore(MethodView):
         except InvalidId:
             abort(400,
                   message="Id consumatore non valido, riprova")
+        # except Exception as e:
+        #     abort(400,
+        #           message=f"Errore non previsto: {e}")
+
+
+@blp.route('/consumatori/delete/<string:idConsumatore>')
+class Consumatore(MethodView):
+    @blp.arguments(DeleteConsumatoreSchema)
+    # Cambia il flag eliminato di un consumatore per cancellarlo logicamente
+    def put(self, dati_consumatore, idConsumatore):
+        try:
+            if dati_consumatore['Eliminato']:
+                # Controllo se l'id inserito nella url esiste
+                check = mongo.cx['TopFidelityCard'].consumatore.find_one(
+                    {"$and": [{"_id": ObjectId(idConsumatore)}, {"Eliminato": False}]})
+                if not check:
+                    abort(404,
+                          message="Consumatore non trovato")
+
+                # Eliminazione logica
+                mongo.cx['TopFidelityCard'].consumatore.update_one(
+                    {"$and": [{"_id": ObjectId(idConsumatore)}, {"Eliminato": False}]},
+                    {"$set": {"Eliminato": True}})
+
+                # Eliminazione "cascade" su acquisto
+                mongo.cx['TopFidelityCard'].acquisto.update_many(
+                    {"$and": [{"IdConsumatore": ObjectId(idConsumatore)}, {"Eliminato": False}]},
+                    {"$set": {"Eliminato": True}})
+
+                return {'message': "Consumatore eliminato logicamente"}, 200
+            else:
+                abort(404,
+                      message="Impostare il parametro eliminato su true per usare questa procedura")
+        except InvalidId:
+            abort(400,
+                  message="Id consumatore non valido, riprova")
+        # except Exception as e:
+        #     abort(400,
+        #           message=f"Errore non previsto: {e}")

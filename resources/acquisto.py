@@ -80,7 +80,8 @@ class Acquisto(MethodView):
     def put(self, dati_acquisto, idAcquisto):
         try:
             # Controllo se l'id inserito nel json della request esiste
-            check = mongo.cx['TopFidelityCard'].consumatore.find_one({"_id": ObjectId(dati_acquisto['IdConsumatore'])})
+            check = mongo.cx['TopFidelityCard'].consumatore.find_one(
+                {"$and": [{"_id": ObjectId(dati_acquisto['IdConsumatore'])}, {"Eliminato": False}]})
             if not check:
                 abort(404,
                       message="Consumatore inserito inesistente")
@@ -88,8 +89,7 @@ class Acquisto(MethodView):
             acquisto = mongo.cx['TopFidelityCard'].acquisto.find_one_and_update(
                 {"$and": [{"_id": ObjectId(idAcquisto)}, {"Eliminato": False}]},
                 {"$set": dati_acquisto},
-                return_document=True
-            )
+                return_document=True)
             if not acquisto:
                 abort(404,
                       message="Acquisto non trovato")

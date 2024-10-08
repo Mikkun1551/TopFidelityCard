@@ -25,13 +25,13 @@ class PlainAziendaSchema(Schema):
     Citta = fields.Str(required=True)
     Cap = fields.Str(required=True)
     P_IVA = fields.Str(required=True)
-    Eliminato = fields.Bool()
+    Eliminato = fields.Bool(dump_only=True)
 
 class TipoAziendaSchema(Schema):
     _id = ObjectIdField(dump_only=True)
     Categoria = fields.Str(required=True)
     Descrizione = fields.Str()
-    Eliminato = fields.Bool()
+    Eliminato = fields.Bool(dump_only=True)
 
 class PlainPuntoVenditaSchema(Schema):
     _id = ObjectIdField(dump_only=True)
@@ -39,13 +39,13 @@ class PlainPuntoVenditaSchema(Schema):
     Indirizzo = fields.Str(required=True)
     Citta = fields.Str(required=True)
     Cap = fields.Str(required=True)
-    Eliminato = fields.Bool()
+    Eliminato = fields.Bool(dump_only=True)
 
 class TipoPuntoVenditaSchema(Schema):
     _id = ObjectIdField(dump_only=True)
     Nome = fields.Str(required=True)
     Descrizione = fields.Str()
-    Eliminato = fields.Bool()
+    Eliminato = fields.Bool(dump_only=True)
 
 class PlainCampagnaSchema(Schema):
     _id = ObjectIdField(dump_only=True)
@@ -53,7 +53,7 @@ class PlainCampagnaSchema(Schema):
     DataInizio = fields.DateTime(required=True)
     DataFine = fields.DateTime(required=True)
     ConversionePuntiEuro = fields.Int(required=True)
-    Eliminato = fields.Bool()
+    Eliminato = fields.Bool(dump_only=True)
 
 class PlainPremioSchema(Schema):
     _id = ObjectIdField(dump_only=True)
@@ -63,14 +63,14 @@ class PlainPremioSchema(Schema):
     Url = fields.Str()
     Soglia = fields.Int()
     CodicePremio = fields.Int(required=True)
-    Eliminato = fields.Bool()
+    Eliminato = fields.Bool(dump_only=True)
 
 class PlainTesseraSchema(Schema):
     _id = ObjectIdField(dump_only=True)
     CodiceTessera = fields.Str(required=True)
     DataCreazione = fields.DateTime(required=True)
     DataScadenza = fields.DateTime(required=True)
-    Eliminato = fields.Bool()
+    Eliminato = fields.Bool(dump_only=True)
 
 class PlainConsumatoreSchema(Schema):
     _id = ObjectIdField(dump_only=True)
@@ -84,15 +84,17 @@ class PlainConsumatoreSchema(Schema):
     Indirizzo = fields.Str(required=True)
     Cap = fields.Str(required=True)
     NumeroTelefono = fields.Str(required=True)
-    Eliminato = fields.Bool()
+    Eliminato = fields.Bool(dump_only=True)
 
 class PlainAcquistoSchema(Schema):
     _id = ObjectIdField(dump_only=True)
     DataAcquisto = fields.DateTime(required=True)
     PuntiAcquisiti = fields.Int(required=True)
-    Eliminato = fields.Bool()
+    Eliminato = fields.Bool(dump_only=True)
 
 
+class DeleteConsumatoreSchema(Schema):
+    Eliminato = fields.Bool(required=True)
 
 class DeleteAcquistoSchema(Schema):
     Eliminato = fields.Bool(required=True)
