@@ -5,7 +5,7 @@ from bson.errors import InvalidId, InvalidDocument
 
 # Import del db
 from db import mongo
-from schemas import AcquistoSchema, UpdateAcquistoSchema
+from schemas import AcquistoSchema, UpdateAcquistoSchema, DeleteAcquistoSchema
 
 
 # REQUEST ACQUISTO
@@ -17,22 +17,32 @@ class Acquisto(MethodView):
     @blp.response(200, AcquistoSchema(many=True))
     # Ottiene tutti gli acquisti
     def get(self):
-        acquisto = list(mongo.cx['TopFidelityCard'].acquisto.find())
-        return acquisto
+        try:
+            acquisto = list(mongo.cx['TopFidelityCard'].acquisto.find({"Eliminato": False}))
+            return acquisto
+        except Exception as e:
+            abort(400,
+                  message=f"Errore non previsto: {e}")
 
 
-@blp.route('/acquisti/<int:idAcquisto>')
+@blp.route('/acquisti/<string:idAcquisto>')
 class Acquisto(MethodView):
     @blp.response(200, AcquistoSchema)
     # Ottiene i dettagli di un'acquisto specifico
     def get(self, idAcquisto):
         try:
-            acquisto = mongo.cx['TopFidelityCard'].acquisto.find_one({"_id": ObjectId(idAcquisto)})
+            acquisto = mongo.cx['TopFidelityCard'].acquisto.find_one(
+                    {"$and": [{"_id": ObjectId(idAcquisto)}, {"Eliminato": False}]})
             if acquisto is None:
-                abort(404, message="Acquisto non trovato")
+                abort(404,
+                      message="Acquisto non trovato")
             return acquisto
         except InvalidId:
-            abort(400, message="Id non valido, riprova")
+            abort(400,
+                  message="Id non valido, riprova")
+        except Exception as e:
+            abort(400,
+                  message=f"Errore non previsto: {e}")
 
 
 @blp.route('/createAcquisti')
@@ -43,20 +53,26 @@ class Acquisto(MethodView):
     def post(self, dati_acquisto):
         try:
             # Controllo se l'id inserito nel json della request esiste
-            check = mongo.cx['TopFidelityCard'].consumatore.find_one({"_id": ObjectId(dati_acquisto['IdConsumatore'])})
+            check = mongo.cx['TopFidelityCard'].consumatore.find_one(
+                {"$and": [{"_id": ObjectId(dati_acquisto['IdConsumatore'])}, {"Eliminato": False}]})
             if not check:
                 abort(404,
                       message="Consumatore inserito inesistente")
 
+            dati_acquisto['Eliminato'] = False
             result = mongo.cx['TopFidelityCard'].acquisto.insert_one(dati_acquisto)
-            acquisto = mongo.cx['TopFidelityCard'].acquisto.find_one({"_id": result.inserted_id})
+            acquisto = mongo.cx['TopFidelityCard'].acquisto.find_one(
+                {"$and": [{"_id": result.inserted_id}, {"Eliminato": False}]})
             return acquisto
         except TypeError:
             abort(400,
                   message=f"Id consumatore inserito non valido, controlla che sia giusto")
+        except Exception as e:
+            abort(400,
+                  message=f"Errore non previsto: {e}")
 
 
-@blp.route('/updateAcquisti/<int:idAcquisto>')
+@blp.route('/updateAcquisti/<string:idAcquisto>')
 class Acquisto(MethodView):
     @blp.arguments(UpdateAcquistoSchema)
     @blp.response(200, AcquistoSchema)
@@ -70,12 +86,13 @@ class Acquisto(MethodView):
                       message="Consumatore inserito inesistente")
 
             acquisto = mongo.cx['TopFidelityCard'].acquisto.find_one_and_update(
-                {"_id": ObjectId(idAcquisto)},
+                {"$and": [{"_id": ObjectId(idAcquisto)}, {"Eliminato": False}]},
                 {"$set": dati_acquisto},
                 return_document=True
             )
             if not acquisto:
-                abort(404, message="Acquisto non trovato")
+                abort(404,
+                      message="Acquisto non trovato")
             return acquisto
         except TypeError:
             abort(400,
@@ -86,3 +103,37 @@ class Acquisto(MethodView):
         except InvalidId:
             abort(400,
                   message="Id acquisto non valido, riprova")
+        except Exception as e:
+            abort(400,
+                  message=f"Errore non previsto: {e}")
+
+
+@blp.route('/updateAcquisti/delete/<string:idAcquisto>')
+class Acquisto(MethodView):
+    @blp.arguments(DeleteAcquistoSchema)
+    # Cambia il flag eliminato di un'acquisto per cancellarlo logicamente
+    def put(self, dati_acquisto, idAcquisto):
+        try:
+            if dati_acquisto['Eliminato']:
+                # Controllo se l'id inserito nella url esiste
+                check = mongo.cx['TopFidelityCard'].acquisto.find_one(
+                    {"$and": [{"_id": ObjectId(idAcquisto)}, {"Eliminato": False}]})
+                if not check:
+                    abort(404,
+                          message="Acquisto non trovato")
+
+                # Eliminazione logica
+                mongo.cx['TopFidelityCard'].acquisto.update_one(
+                    {"$and": [{"_id": ObjectId(idAcquisto)}, {"Eliminato": False}]},
+                    {"$set": {"Eliminato": True}})
+
+                return {'message': "Acquisto eliminato logicamente"}, 200
+            else:
+                abort(404,
+                      message="Impostare il parametro eliminato su true per usare questa procedura")
+        except InvalidId:
+            abort(400,
+                  message="Id acquisto non valido, riprova")
+        except Exception as e:
+            abort(400,
+                  message=f"Errore non previsto: {e}")
