@@ -81,6 +81,12 @@ class Consumatore(MethodView):
     # Aggiorna i dettagli di un consumatore esistente
     def put(self, dati_consumatore, idConsumatore):
         try:
+            # Controllo se l'id inserito nel json della request esiste
+            check = mongo.cx['TopFidelityCard'].tessera.find_one({"_id": ObjectId(dati_consumatore['IdTessera'])})
+            if not check:
+                abort(404,
+                      message="Tessera inserita inesistente")
+
             consumatore = mongo.cx['TopFidelityCard'].consumatore.find_one_and_update(
                 {"_id": ObjectId(idConsumatore)},
                 {"$set": dati_consumatore},
@@ -90,6 +96,9 @@ class Consumatore(MethodView):
                 abort(404,
                       message="Consumatore non trovato")
             return consumatore
+        except TypeError:
+            abort(400,
+                  message=f"Id tessera inserito non valido, controlla che sia giusto")
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
             field_error = list(key_pattern.keys())

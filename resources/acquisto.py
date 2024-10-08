@@ -63,6 +63,12 @@ class Acquisto(MethodView):
     # Aggiorna i dettagli di un'acquisto esistente
     def put(self, dati_acquisto, idAcquisto):
         try:
+            # Controllo se l'id inserito nel json della request esiste
+            check = mongo.cx['TopFidelityCard'].consumatore.find_one({"_id": ObjectId(dati_acquisto['IdConsumatore'])})
+            if not check:
+                abort(404,
+                      message="Consumatore inserito inesistente")
+
             acquisto = mongo.cx['TopFidelityCard'].acquisto.find_one_and_update(
                 {"_id": ObjectId(idAcquisto)},
                 {"$set": dati_acquisto},
@@ -71,6 +77,9 @@ class Acquisto(MethodView):
             if not acquisto:
                 abort(404, message="Acquisto non trovato")
             return acquisto
+        except TypeError:
+            abort(400,
+                  message=f"Id consumatore inserito non valido, controlla che sia giusto")
         except InvalidDocument:
             abort(400,
                   message="IdConsumatore non valido, riprova")

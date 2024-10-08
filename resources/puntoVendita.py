@@ -73,6 +73,18 @@ class PuntoVendita(MethodView):
     # Aggiorna i dettagli di un punto vendita esistente
     def put(self, dati_punto_vendita, idPuntoVendita):
         try:
+            # Controllo se gli id inseriti nel json della request esistono
+            check_azienda = mongo.cx['TopFidelityCard'].azienda.find_one(
+                {"_id": ObjectId(dati_punto_vendita['IdAzienda'])})
+            if not check_azienda:
+                abort(404,
+                      message="Azienda inserita inesistenta")
+            check_t_punto_vendita = mongo.cx['TopFidelityCard'].tipoPuntoVendita.find_one(
+                {"_id": ObjectId(dati_punto_vendita['IdTipoPuntoVendita'])})
+            if not check_t_punto_vendita:
+                abort(404,
+                      message="Tipo punto vendita inserito inesistente")
+
             punto_vendita = mongo.cx['TopFidelityCard'].puntoVendita.find_one_and_update(
                 {"_id": ObjectId(idPuntoVendita)},
                 {"$set": dati_punto_vendita},
@@ -82,6 +94,9 @@ class PuntoVendita(MethodView):
                 abort(404,
                       message="Punto vendita non trovato")
             return punto_vendita
+        except TypeError:
+            abort(400,
+                  message=f"Uno o entrambi gli id inseriti non sono validi, controlla e riprova")
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
             field_error = list(key_pattern.keys())

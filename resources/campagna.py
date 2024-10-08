@@ -71,6 +71,12 @@ class Campagna(MethodView):
     # Aggiorna i dettagli di una campagna esistente
     def put(self, dati_campagna, idCampagna):
         try:
+            # Controllo se l'id inserito nel json della request esiste
+            check = mongo.cx['TopFidelityCard'].azienda.find_one({"_id": ObjectId(dati_campagna['IdAzienda'])})
+            if not check:
+                abort(404,
+                      message="Azienda inserita inesistente")
+
             campagna = mongo.cx['TopFidelityCard'].campagna.find_one_and_update(
                 {"_id": ObjectId(idCampagna)},
                 {"$set": dati_campagna},
@@ -80,6 +86,9 @@ class Campagna(MethodView):
                 abort(404,
                       message="Campagna non trovata")
             return campagna
+        except TypeError:
+            abort(400,
+                  message=f"Id azienda inserito non valido, controlla che sia giusto")
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
             field_error = list(key_pattern.keys())

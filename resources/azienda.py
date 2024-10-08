@@ -71,6 +71,12 @@ class Azienda(MethodView):
     # Aggiorna i dettagli di un'azienda esistente
     def put(self, dati_azienda, idAzienda):
         try:
+            # Controllo se l'id inserito nel json della request esiste
+            check = mongo.cx['TopFidelityCard'].tipoAzienda.find_one({"_id": ObjectId(dati_azienda['IdTipoAzienda'])})
+            if not check:
+                abort(404,
+                      message="Tipo azienda inserito inesistente")
+
             azienda = mongo.cx['TopFidelityCard'].azienda.find_one_and_update(
                 {"_id": ObjectId(idAzienda)},
                 {"$set": dati_azienda},
@@ -80,6 +86,9 @@ class Azienda(MethodView):
                 abort(404,
                       message="Azienda non trovata")
             return azienda
+        except TypeError:
+            abort(400,
+                  message=f"Id tipo azienda inserito non valido, controlla che sia giusto")
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
             field_error = list(key_pattern.keys())

@@ -71,6 +71,12 @@ class Tessera(MethodView):
     # Aggiorna i dettagli di una tessera esistente
     def put(self, dati_tessera, idTessera):
         try:
+            # Controllo se l'id inserito nel json della request esiste
+            check = mongo.cx['TopFidelityCard'].puntoVendita.find_one({"_id": ObjectId(dati_tessera['IdPuntoVendita'])})
+            if not check:
+                abort(404,
+                      message="Campagna inserita inesistente")
+
             tessera = mongo.cx['TopFidelityCard'].tessera.find_one_and_update(
                 {"_id": ObjectId(idTessera)},
                 {"$set": dati_tessera},
@@ -80,6 +86,9 @@ class Tessera(MethodView):
                 abort(404,
                       message="Tessera non trovata")
             return tessera
+        except TypeError:
+            abort(400,
+                  message=f"Id punto vendita inserito non valido, controlla che sia giusto")
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
             field_error = list(key_pattern.keys())

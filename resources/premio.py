@@ -65,6 +65,12 @@ class Premio(MethodView):
     # Aggiorna i dettagli di un premio esistente
     def put(self, dati_premio, idPremio):
         try:
+            # Controllo se l'id inserito nel json della request esiste
+            check = mongo.cx['TopFidelityCard'].campagna.find_one({"_id": ObjectId(dati_premio['IdCampagna'])})
+            if not check:
+                abort(404,
+                      message="Campagna inserita inesistente")
+
             premio = mongo.cx['TopFidelityCard'].premio.find_one_and_update(
                 {"_id": ObjectId(idPremio)},
                 {"$set": dati_premio},
@@ -74,6 +80,9 @@ class Premio(MethodView):
                 abort(404,
                       message="Premio non trovato")
             return premio
+        except TypeError:
+            abort(400,
+                  message=f"Id campagna inserito non valido, controlla che sia giusto")
         except InvalidDocument:
             abort(400,
                   message="IdCampagna non valido, riprova")
