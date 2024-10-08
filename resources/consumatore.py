@@ -30,10 +30,12 @@ class Consumatore(MethodView):
         try:
             consumatore = mongo.cx['TopFidelityCard'].consumatore.find_one({"_id": ObjectId(idConsumatore)})
             if consumatore is None:
-                abort(404, message="Consumatore non trovato")
+                abort(404,
+                      message="Consumatore non trovato")
             return consumatore
         except InvalidId:
-            abort(400, message="Id non valido, riprova")
+            abort(400,
+                  message="Id non valido, riprova")
 
 
 @blp.route('/consumatori')
@@ -43,8 +45,18 @@ class Consumatore(MethodView):
     # Crea un nuovo consumatore
     def post(self, dati_consumatore):
         try:
+            # Controllo se l'id inserito nel json della request esiste
+            check = mongo.cx['TopFidelityCard'].tessera.find_one({"_id": ObjectId(dati_consumatore['IdTessera'])})
+            if not check:
+                abort(404,
+                      message="Tessera inserita inesistente")
+
             result = mongo.cx['TopFidelityCard'].consumatore.insert_one(dati_consumatore)
             consumatore = mongo.cx['TopFidelityCard'].consumatore.find_one({"_id": result.inserted_id})
+            return consumatore
+        except TypeError:
+            abort(400,
+                  message=f"Id tessera inserito non valido, controlla che sia giusto")
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
             field_error = list(key_pattern.keys())
@@ -60,7 +72,6 @@ class Consumatore(MethodView):
             else:
                 abort(400,
                       message=f"Richiesta non valida, errore non noto")
-        return consumatore
 
 
 @blp.route('/consumatori/<string:idConsumatore>')
@@ -76,7 +87,8 @@ class Consumatore(MethodView):
                 return_document=True
             )
             if not consumatore:
-                abort(404, message="Consumatore non trovato")
+                abort(404,
+                      message="Consumatore non trovato")
             return consumatore
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")

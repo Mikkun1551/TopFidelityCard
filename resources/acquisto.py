@@ -41,9 +41,19 @@ class Acquisto(MethodView):
     @blp.response(201, AcquistoSchema)
     # Crea un nuovo acquisto
     def post(self, dati_acquisto):
-        result = mongo.cx['TopFidelityCard'].acquisto.insert_one(dati_acquisto)
-        acquisto = mongo.cx['TopFidelityCard'].acquisto.find_one({"_id": result.inserted_id})
-        return acquisto
+        try:
+            # Controllo se l'id inserito nel json della request esiste
+            check = mongo.cx['TopFidelityCard'].consumatore.find_one({"_id": ObjectId(dati_acquisto['IdConsumatore'])})
+            if not check:
+                abort(404,
+                      message="Consumatore inserito inesistente")
+
+            result = mongo.cx['TopFidelityCard'].acquisto.insert_one(dati_acquisto)
+            acquisto = mongo.cx['TopFidelityCard'].acquisto.find_one({"_id": result.inserted_id})
+            return acquisto
+        except TypeError:
+            abort(400,
+                  message=f"Id consumatore inserito non valido, controlla che sia giusto")
 
 
 @blp.route('/updateAcquisti/<int:idAcquisto>')

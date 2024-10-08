@@ -30,10 +30,12 @@ class Azienda(MethodView):
         try:
             azienda = mongo.cx['TopFidelityCard'].azienda.find_one({"_id": ObjectId(idAzienda)})
             if azienda is None:
-                abort(404, message="Azienda non trovata")
+                abort(404,
+                      message="Azienda non trovata")
             return azienda
         except InvalidId:
-            abort(400, message="Id non valido, riprova")
+            abort(400,
+                  message="Id non valido, riprova")
 
 
 @blp.route('/apiAzienda/createAziende')
@@ -43,12 +45,18 @@ class Azienda(MethodView):
     # Crea una nuova azienda
     def post(self, dati_azienda):
         try:
+            # Controllo se l'id inserito nel json della request esiste
             check = mongo.cx['TopFidelityCard'].tipoAzienda.find_one({"_id": ObjectId(dati_azienda['IdTipoAzienda'])})
             if not check:
-                abort(404, message="Tipo azienda inserito inesistente")
+                abort(404,
+                      message="Tipo azienda inserito inesistente")
+
             result = mongo.cx['TopFidelityCard'].azienda.insert_one(dati_azienda)
             azienda = mongo.cx['TopFidelityCard'].azienda.find_one({"_id": result.inserted_id})
             return azienda
+        except TypeError:
+            abort(400,
+                  message=f"Id tipo azienda inserito non valido, controlla che sia giusto")
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
             field_error = list(key_pattern.keys())
@@ -69,7 +77,8 @@ class Azienda(MethodView):
                 return_document=True
             )
             if not azienda:
-                abort(404, message="Azienda non trovata")
+                abort(404,
+                      message="Azienda non trovata")
             return azienda
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")

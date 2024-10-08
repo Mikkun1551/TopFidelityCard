@@ -29,12 +29,12 @@ class TipoPuntoVendita(MethodView):
         try:
             result = mongo.cx['TopFidelityCard'].tipoPuntoVendita.insert_one(dati_t_punto_vendita)
             t_punto_vendita = mongo.cx['TopFidelityCard'].tipoPuntoVendita.find_one({"_id": result.inserted_id})
+            return t_punto_vendita
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
             field_error = list(key_pattern.keys())
             abort(400,
                   message=f"Richiesta non valida, '{field_error[0]}' già esistente")
-        return t_punto_vendita
 
 
 @blp.route('/tipoPuntoVendita/<string:idTipoPuntoVendita>')
@@ -45,10 +45,12 @@ class TipoPuntoVendita(MethodView):
         try:
             t_punto_vendita = mongo.cx['TopFidelityCard'].tipoPuntoVendita.find_one({"_id": ObjectId(idTipoPuntoVendita)})
             if t_punto_vendita is None:
-                abort(404, message="Tipo punto vendita non trovato")
+                abort(404,
+                      message="Tipo punto vendita non trovato")
             return t_punto_vendita
         except InvalidId:
-            abort(400, message="Id non valido, riprova")
+            abort(400,
+                  message="Id non valido, riprova")
 
 
     @blp.arguments(UpdateTipoPuntoVenditaSchema)
@@ -62,7 +64,8 @@ class TipoPuntoVendita(MethodView):
                 return_document=True
             )
             if not t_punto_vendita:
-                abort(404, message="Tipo punto vendita non trovato")
+                abort(404,
+                      message="Tipo punto vendita non trovato")
             return t_punto_vendita
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
@@ -70,4 +73,5 @@ class TipoPuntoVendita(MethodView):
             abort(400,
                   message=f"Richiesta non valida, '{field_error[0]}' già esistente")
         except InvalidId:
-            abort(400, message="Id non valido, riprova")
+            abort(400,
+                  message="Id tipo punto vendita non valido, riprova")

@@ -27,14 +27,29 @@ class PuntoVendita(MethodView):
     # Crea un nuovo punto vendita
     def post(self, dati_punto_vendita):
         try:
+            # Controllo se gli id inseriti nel json della request esistono
+            check_azienda = mongo.cx['TopFidelityCard'].azienda.find_one(
+                {"_id": ObjectId(dati_punto_vendita['IdAzienda'])})
+            if not check_azienda:
+                abort(404,
+                      message="Azienda inserita inesistenta")
+            check_t_punto_vendita = mongo.cx['TopFidelityCard'].tipoPuntoVendita.find_one(
+                {"_id": ObjectId(dati_punto_vendita['IdTipoPuntoVendita'])})
+            if not check_t_punto_vendita:
+                abort(404,
+                      message="Tipo punto vendita inserito inesistente")
+
             result = mongo.cx['TopFidelityCard'].puntoVendita.insert_one(dati_punto_vendita)
             punto_vendita = mongo.cx['TopFidelityCard'].puntoVendita.find_one({"_id": result.inserted_id})
+            return punto_vendita
+        except TypeError:
+            abort(400,
+                  message=f"Uno o entrambi gli id inseriti non sono validi, controlla e riprova")
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
             field_error = list(key_pattern.keys())
             abort(400,
                   message=f"Richiesta non valida, '{field_error[0]}' già esistente")
-        return punto_vendita
 
 
 @blp.route('/PuntoVendita/<string:idPuntoVendita>')
@@ -45,10 +60,12 @@ class PuntoVendita(MethodView):
         try:
             punto_vendita = mongo.cx['TopFidelityCard'].puntoVendita.find_one({"_id": ObjectId(idPuntoVendita)})
             if punto_vendita is None:
-                abort(404, message="Punto vendita non trovato")
+                abort(404,
+                      message="Punto vendita non trovato")
             return punto_vendita
         except InvalidId:
-            abort(400, message="Id non valido, riprova")
+            abort(400,
+                  message="Id non valido, riprova")
 
 
     @blp.arguments(UpdatePuntoVenditaSchema)
@@ -62,7 +79,8 @@ class PuntoVendita(MethodView):
                 return_document=True
             )
             if not punto_vendita:
-                abort(404, message="Punto vendita non trovato")
+                abort(404,
+                      message="Punto vendita non trovato")
             return punto_vendita
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")

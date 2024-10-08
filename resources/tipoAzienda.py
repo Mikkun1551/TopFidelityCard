@@ -30,10 +30,12 @@ class TipoAzienda(MethodView):
         try:
             t_azienda = mongo.cx['TopFidelityCard'].tipoAzienda.find_one({"_id": ObjectId(idTipoAzienda)})
             if t_azienda is None:
-                abort(404, message="Tipo azienda non trovato")
+                abort(404,
+                      message="Tipo azienda non trovato")
             return t_azienda
         except InvalidId:
-            abort(400, message="Id non valido, riprova")
+            abort(400,
+                  message="Id non valido, riprova")
 
 
 @blp.route('/apiTipiAzienda/createTipiAzienda')
@@ -66,7 +68,8 @@ class TipoAzienda(MethodView):
                 return_document=True
             )
             if not t_azienda:
-                abort(404, message="Tipo azienda non trovato")
+                abort(404,
+                      message="Tipo azienda non trovato")
             return t_azienda
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
@@ -74,4 +77,5 @@ class TipoAzienda(MethodView):
             abort(400,
                   message=f"Richiesta non valida, '{field_error[0]}' già esistente")
         except InvalidId:
-            abort(400, message="Id tipo azienda non valido, riprova")
+            abort(400,
+                  message="Id tipo azienda non valido, riprova")

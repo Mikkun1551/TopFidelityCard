@@ -30,10 +30,12 @@ class Campagna(MethodView):
         try:
             campagna = mongo.cx['TopFidelityCard'].campagna.find_one({"_id": ObjectId(idCampagna)})
             if campagna is None:
-                abort(404, message="Campagna non trovata")
+                abort(404,
+                      message="Campagna non trovata")
             return campagna
         except InvalidId:
-            abort(400, message="Id non valido, riprova")
+            abort(400,
+                  message="Id non valido, riprova")
 
 
 @blp.route('/createCampagne')
@@ -43,14 +45,23 @@ class Campagna(MethodView):
     # Crea una nuova campagna
     def post(self, dati_campagna):
         try:
+            # Controllo se l'id inserito nel json della request esiste
+            check = mongo.cx['TopFidelityCard'].azienda.find_one({"_id": ObjectId(dati_campagna['IdAzienda'])})
+            if not check:
+                abort(404,
+                      message="Azienda inserita inesistente")
+
             result = mongo.cx['TopFidelityCard'].campagna.insert_one(dati_campagna)
             campagna = mongo.cx['TopFidelityCard'].campagna.find_one({"_id": result.inserted_id})
+            return campagna
+        except TypeError:
+            abort(400,
+                  message=f"Id azienda inserito non valido, controlla che sia giusto")
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
             field_error = list(key_pattern.keys())
             abort(400,
                   message=f"Richiesta non valida, '{field_error[0]}' già esistente")
-        return campagna
 
 
 @blp.route('/updateCampagne/<string:idCampagna>')
@@ -66,7 +77,8 @@ class Campagna(MethodView):
                 return_document=True
             )
             if not campagna:
-                abort(404, message="Campagna non trovata")
+                abort(404,
+                      message="Campagna non trovata")
             return campagna
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")

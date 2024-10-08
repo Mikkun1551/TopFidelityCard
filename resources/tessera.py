@@ -30,10 +30,12 @@ class Tessera(MethodView):
         try:
             tessera = mongo.cx['TopFidelityCard'].tessera.find_one({"_id": ObjectId(idTessera)})
             if tessera is None:
-                abort(404, message="Tessera non trovata")
+                abort(404,
+                      message="Tessera non trovata")
             return tessera
         except InvalidId:
-            abort(400, message="Id non valido, riprova")
+            abort(400,
+                  message="Id non valido, riprova")
 
 
 @blp.route('/tessere_gruppo')
@@ -43,14 +45,23 @@ class Tessera(MethodView):
     # Crea una nuova tessera
     def post(self, dati_tessera):
         try:
+            # Controllo se l'id inserito nel json della request esiste
+            check = mongo.cx['TopFidelityCard'].puntoVendita.find_one({"_id": ObjectId(dati_tessera['IdPuntoVendita'])})
+            if not check:
+                abort(404,
+                      message="Campagna inserita inesistente")
+
             result = mongo.cx['TopFidelityCard'].tessera.insert_one(dati_tessera)
             tessera = mongo.cx['TopFidelityCard'].tessera.find_one({"_id": result.inserted_id})
+            return tessera
+        except TypeError:
+            abort(400,
+                  message=f"Id punto vendita inserito non valido, controlla che sia giusto")
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
             field_error = list(key_pattern.keys())
             abort(400,
                   message=f"Richiesta non valida, '{field_error[0]}' già esistente")
-        return tessera
 
 
 @blp.route('/tessere_gruppo/<string:idTessera>')
@@ -66,7 +77,8 @@ class Tessera(MethodView):
                 return_document=True
             )
             if not tessera:
-                abort(404, message="Tessera non trovata")
+                abort(404,
+                      message="Tessera non trovata")
             return tessera
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
