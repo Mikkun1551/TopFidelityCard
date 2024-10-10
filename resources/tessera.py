@@ -57,7 +57,7 @@ class Tessera(MethodView):
             check = mongo.cx['TopFidelityCard'].puntoVendita.find_one(
                 {"_id": ObjectId(dati_tessera['IdPuntoVendita']), "Eliminato": False})
             if not check:
-                abort(404, message="Campagna inserita inesistente")
+                abort(404, message="Punto vendita inserito inesistente")
 
             dati_tessera['Eliminato'] = False
             result = mongo.cx['TopFidelityCard'].tessera.insert_one(dati_tessera)
