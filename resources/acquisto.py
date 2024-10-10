@@ -40,9 +40,9 @@ class Acquisto(MethodView):
         except InvalidId:
             abort(400,
                   message="Id non valido, riprova")
-        except Exception as e:
-            abort(400,
-                  message=f"Errore non previsto: {e}")
+        # except Exception as e:
+        #     abort(400,
+        #           message=f"Errore non previsto: {e}")
 
 
 @blp.route('/createAcquisti')
@@ -67,9 +67,9 @@ class Acquisto(MethodView):
         except TypeError:
             abort(400,
                   message=f"Id consumatore inserito non valido, controlla che sia giusto")
-        except Exception as e:
-            abort(400,
-                  message=f"Errore non previsto: {e}")
+        # except Exception as e:
+        #     abort(400,
+        #           message=f"Errore non previsto: {e}")
 
 
 @blp.route('/updateAcquisti/<string:idAcquisto>')
@@ -103,9 +103,9 @@ class Acquisto(MethodView):
         except InvalidId:
             abort(400,
                   message="Id acquisto non valido, riprova")
-        except Exception as e:
-            abort(400,
-                  message=f"Errore non previsto: {e}")
+        # except Exception as e:
+        #     abort(400,
+        #           message=f"Errore non previsto: {e}")
 
 
 @blp.route('/updateAcquisti/delete/<string:idAcquisto>')
@@ -134,6 +134,6 @@ class Acquisto(MethodView):
         except InvalidId:
             abort(400,
                   message="Id acquisto non valido, riprova")
-        except Exception as e:
-            abort(400,
-                  message=f"Errore non previsto: {e}")
+        # except Exception as e:
+        #     abort(400,
+        #           message=f"Errore non previsto: {e}")

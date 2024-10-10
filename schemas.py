@@ -93,6 +93,28 @@ class PlainAcquistoSchema(Schema):
     Eliminato = fields.Bool(dump_only=True)
 
 
+
+class DeleteAziendaSchema(Schema):
+    Eliminato = fields.Bool(required=True)
+
+class DeleteTipoAziendaSchema(Schema):
+    Eliminato = fields.Bool(required=True)
+
+class DeletePuntoVenditaSchema(Schema):
+    Eliminato = fields.Bool(required=True)
+
+class DeleteTipoPuntoVenditaSchema(Schema):
+    Eliminato = fields.Bool(required=True)
+
+class DeleteCampagnaSchema(Schema):
+    Eliminato = fields.Bool(required=True)
+
+class DeletePremioSchema(Schema):
+    Eliminato = fields.Bool(required=True)
+
+class DeleteTesseraSchema(Schema):
+    Eliminato = fields.Bool(required=True)
+
 class DeleteConsumatoreSchema(Schema):
     Eliminato = fields.Bool(required=True)
 

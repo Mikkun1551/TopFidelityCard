@@ -164,7 +164,7 @@ class Consumatore(MethodView):
                     {"$and": [{"IdConsumatore": ObjectId(idConsumatore)}, {"Eliminato": False}]},
                     {"$set": {"Eliminato": True}})
 
-                return {'message': "Consumatore eliminato logicamente"}, 200
+                return {'message': "Consumatore e relativi acquisti eliminati logicamente"}, 200
             else:
                 abort(404,
                       message="Impostare il parametro eliminato su true per usare questa procedura")

@@ -6,7 +6,7 @@ from bson.errors import InvalidId
 
 # Import del db
 from db import mongo
-from schemas import TipoPuntoVenditaSchema, UpdateTipoPuntoVenditaSchema
+from schemas import TipoPuntoVenditaSchema, UpdateTipoPuntoVenditaSchema, DeleteTipoPuntoVenditaSchema
 
 
 # REQUEST TIPO PUNTO VENDITA
@@ -18,8 +18,12 @@ class TipoPuntoVendita(MethodView):
     @blp.response(200, TipoPuntoVenditaSchema(many=True))
     # Ottiene tutti i tipi di punto vendita
     def get(self):
-        t_punto_vendita = list(mongo.cx['TopFidelityCard'].tipoPuntoVendita.find())
-        return t_punto_vendita
+        try:
+            t_punto_vendita = list(mongo.cx['TopFidelityCard'].tipoPuntoVendita.find({"Eliminato": False}))
+            return t_punto_vendita
+        except Exception as e:
+            abort(400,
+                  message=f"Errore non previsto: {e}")
 
 
     @blp.arguments(TipoPuntoVenditaSchema)
@@ -27,14 +31,19 @@ class TipoPuntoVendita(MethodView):
     # Crea un nuovo tipo di punto vendita
     def post(self, dati_t_punto_vendita):
         try:
+            dati_t_punto_vendita['Eliminato'] = False
             result = mongo.cx['TopFidelityCard'].tipoPuntoVendita.insert_one(dati_t_punto_vendita)
-            t_punto_vendita = mongo.cx['TopFidelityCard'].tipoPuntoVendita.find_one({"_id": result.inserted_id})
+            t_punto_vendita = mongo.cx['TopFidelityCard'].tipoPuntoVendita.find_one(
+                {"$and": [{"_id": result.inserted_id}, {"Eliminato": False}]})
             return t_punto_vendita
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
             field_error = list(key_pattern.keys())
             abort(400,
                   message=f"Richiesta non valida, '{field_error[0]}' già esistente")
+        except Exception as e:
+            abort(400,
+                  message=f"Errore non previsto: {e}")
 
 
 @blp.route('/tipoPuntoVendita/<string:idTipoPuntoVendita>')
@@ -43,7 +52,8 @@ class TipoPuntoVendita(MethodView):
     # Ottiene i dettagli di un tipo punto vendita specifico
     def get(self, idTipoPuntoVendita):
         try:
-            t_punto_vendita = mongo.cx['TopFidelityCard'].tipoPuntoVendita.find_one({"_id": ObjectId(idTipoPuntoVendita)})
+            t_punto_vendita = mongo.cx['TopFidelityCard'].tipoPuntoVendita.find_one(
+                {"$and": [{"_id": ObjectId(idTipoPuntoVendita)}, {"Eliminato": False}]})
             if t_punto_vendita is None:
                 abort(404,
                       message="Tipo punto vendita non trovato")
@@ -51,6 +61,9 @@ class TipoPuntoVendita(MethodView):
         except InvalidId:
             abort(400,
                   message="Id non valido, riprova")
+        # except Exception as e:
+        #     abort(400,
+        #           message=f"Errore non previsto: {e}")
 
 
     @blp.arguments(UpdateTipoPuntoVenditaSchema)
@@ -59,10 +72,9 @@ class TipoPuntoVendita(MethodView):
     def put(self, dati_t_punto_vendita, idTipoPuntoVendita):
         try:
             t_punto_vendita = mongo.cx['TopFidelityCard'].tipoPuntoVendita.find_one_and_update(
-                {"_id": ObjectId(idTipoPuntoVendita)},
+                {"$and": [{"_id": ObjectId(idTipoPuntoVendita)}, {"Eliminato": False}]},
                 {"$set": dati_t_punto_vendita},
-                return_document=True
-            )
+                return_document=True)
             if not t_punto_vendita:
                 abort(404,
                       message="Tipo punto vendita non trovato")
@@ -75,3 +87,72 @@ class TipoPuntoVendita(MethodView):
         except InvalidId:
             abort(400,
                   message="Id tipo punto vendita non valido, riprova")
+        # except Exception as e:
+        #     abort(400,
+        #           message=f"Errore non previsto: {e}")
+
+
+@blp.route('/tipoPuntoVendita/delete/<string:idTipoPuntoVendita>')
+class TipoPuntoVendita(MethodView):
+    @blp.arguments(DeleteTipoPuntoVenditaSchema)
+    # Cambia il flag eliminato di un tipo punto vendita per cancellarlo logicamente
+    def put(self, dati_t_punto_vendita, idTipoPuntoVendita):
+        try:
+            if dati_t_punto_vendita['Eliminato']:
+                # Controllo se l'id inserito nella url esiste
+                check = mongo.cx['TopFidelityCard'].tipoPuntoVendita.find_one(
+                    {"$and": [{"_id": ObjectId(idTipoPuntoVendita)}, {"Eliminato": False}]})
+                if not check:
+                    abort(404,
+                          message="Tipo punto vendita non trovato")
+
+                # Eliminazione logica
+                mongo.cx['TopFidelityCard'].tipoPuntoVendita.update_one(
+                    {"$and": [{"_id": ObjectId(idTipoPuntoVendita)}, {"Eliminato": False}]},
+                    {"$set": {"Eliminato": True}})
+
+                # Controllo dei punti vendita legati al tipo punto vendita eliminato
+                punti_vendita = mongo.cx['TopFidelityCard'].puntoVendita.find(
+                    {"$and": [{"IdTipoPuntoVendita": ObjectId(idTipoPuntoVendita)}, {"Eliminato": False}]})
+
+                # Controllo delle tessere legate ai punto vendita da eliminaro
+                for punto_vendita in punti_vendita:
+                    tessere = mongo.cx['TopFidelityCard'].tessera.find(
+                        {"$and": [{"IdPuntoVendita": punto_vendita['_id']}, {"Eliminato": False}]})
+
+                    # Controllo dei consumatori legati alle tessere da eliminare
+                    for tessera in tessere:
+                        consumatori = mongo.cx['TopFidelityCard'].consumatore.find(
+                            {"$and": [{"IdTessera": tessera['_id']}, {"Eliminato": False}]})
+
+                        # Eliminazione degli acquisti legati ai consumatori da eliminare
+                        for consumatore in consumatori:
+                            mongo.cx['TopFidelityCard'].acquisto.update_many(
+                                {"$and": [{"IdConsumatore": consumatore['_id']}, {"Eliminato": False}]},
+                                {"$set": {"Eliminato": True}})
+
+                        # Eliminazione "cascade" su consumatore
+                        mongo.cx['TopFidelityCard'].consumatore.update_many(
+                            {"$and": [{"IdTessera": tessera['_id']}, {"Eliminato": False}]},
+                            {"$set": {"Eliminato": True}})
+
+                    # Eliminazione "cascade" su tessera
+                    mongo.cx['TopFidelityCard'].tessera.update_many(
+                        {"$and": [{"IdPuntoVendita": punto_vendita['_id']}, {"Eliminato": False}]},
+                        {"$set": {"Eliminato": True}})
+
+                # Eliminazione "cascade" su puntoVendita
+                mongo.cx['TopFidelityCard'].puntoVendita.update_many(
+                    {"$and": [{"IdTipoPuntoVendita": ObjectId(idTipoPuntoVendita)}, {"Eliminato": False}]},
+                    {"$set": {"Eliminato": True}})
+
+                return {'message': "Tipo punto vendita e relativi documenti eliminati logicamente"}, 200
+            else:
+                abort(404,
+                      message="Impostare il parametro eliminato su true per usare questa procedura")
+        except InvalidId:
+            abort(400,
+                  message="Id tipo punto vendita non valido, riprova")
+        # except Exception as e:
+        #     abort(400,
+        #           message=f"Errore non previsto: {e}")

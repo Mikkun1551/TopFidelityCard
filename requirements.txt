@@ -1,6 +1,7 @@
-flask
+flask~=3.0.3
 flask-smorest
 python-dotenv
-marshmallow
-pymongo
+marshmallow~=3.22.0
+pymongo~=4.10.1
 flask_pymongo
+Werkzeug~=3.0.4
