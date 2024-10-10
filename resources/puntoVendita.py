@@ -3,6 +3,7 @@ from flask_smorest import Blueprint, abort
 from pymongo.errors import DuplicateKeyError
 from bson.objectid import ObjectId
 from bson.errors import InvalidId, InvalidDocument
+from werkzeug.exceptions import HTTPException
 
 # Import del db
 from db import mongo
@@ -22,8 +23,7 @@ class PuntoVendita(MethodView):
             punto_vendita = list(mongo.cx['TopFidelityCard'].puntoVendita.find({"Eliminato": False}))
             return punto_vendita
         except Exception as e:
-            abort(400,
-                  message=f"Errore non previsto: {e}")
+            abort(500, message=f"Errore non previsto: {e}")
 
 
     @blp.arguments(PuntoVenditaSchema)
@@ -33,32 +33,30 @@ class PuntoVendita(MethodView):
         try:
             # Controllo se gli id inseriti nel json della request esistono
             check_azienda = mongo.cx['TopFidelityCard'].azienda.find_one(
-                {"$and": [{"_id": ObjectId(dati_punto_vendita['IdAzienda'])}, {"Eliminato": False}]})
+                {"_id": ObjectId(dati_punto_vendita['IdAzienda']), "Eliminato": False})
             if not check_azienda:
-                abort(404,
-                      message="Azienda inserita inesistente")
+                abort(404, message="Azienda inserita inesistente")
             check_t_punto_vendita = mongo.cx['TopFidelityCard'].tipoPuntoVendita.find_one(
-                {"$and": [{"_id": ObjectId(dati_punto_vendita['IdTipoPuntoVendita'])}, {"Eliminato": False}]})
+                {"_id": ObjectId(dati_punto_vendita['IdTipoPuntoVendita']), "Eliminato": False})
             if not check_t_punto_vendita:
-                abort(404,
-                      message="Tipo punto vendita inserito inesistente")
+                abort(404, message="Tipo punto vendita inserito inesistente")
 
             dati_punto_vendita['Eliminato'] = False
             result = mongo.cx['TopFidelityCard'].puntoVendita.insert_one(dati_punto_vendita)
             punto_vendita = mongo.cx['TopFidelityCard'].puntoVendita.find_one(
-                {"$and": [{"_id": result.inserted_id}, {"Eliminato": False}]})
+                {"_id": result.inserted_id, "Eliminato": False})
             return punto_vendita
         except TypeError:
-            abort(400,
-                  message=f"Uno o entrambi gli id inseriti non sono validi, controlla e riprova")
+            abort(400, message=f"Uno o entrambi gli id inseriti non sono validi, controlla e riprova")
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
             field_error = list(key_pattern.keys())
-            abort(400,
-                  message=f"Richiesta non valida, '{field_error[0]}' già esistente")
-        # except Exception as e:
-        #     abort(400,
-        #           message=f"Errore non previsto: {e}")
+            abort(400, message=f"Richiesta non valida, '{field_error[0]}' già esistente")
+        # Necessario per evitare che if not azienda vada per l'exception generica
+        except HTTPException:
+            raise
+        except Exception as e:
+            abort(500, message=f"Errore non previsto: {e}")
 
 
 @blp.route('/PuntoVendita/<string:idPuntoVendita>')
@@ -68,17 +66,17 @@ class PuntoVendita(MethodView):
     def get(self, idPuntoVendita):
         try:
             punto_vendita = mongo.cx['TopFidelityCard'].puntoVendita.find_one(
-                {"$and": [{"_id": ObjectId(idPuntoVendita)}, {"Eliminato": False}]})
+                {"_id": ObjectId(idPuntoVendita), "Eliminato": False})
             if punto_vendita is None:
-                abort(404,
-                      message="Punto vendita non trovato")
+                abort(404, message="Punto vendita non trovato")
             return punto_vendita
         except InvalidId:
-            abort(400,
-                  message="Id non valido, riprova")
-        # except Exception as e:
-        #     abort(400,
-        #           message=f"Errore non previsto: {e}")
+            abort(400, message="Id non valido, riprova")
+        # Necessario per evitare che if not azienda vada per l'exception generica
+        except HTTPException:
+            raise
+        except Exception as e:
+            abort(500, message=f"Errore non previsto: {e}")
 
 
     @blp.arguments(UpdatePuntoVenditaSchema)
@@ -88,42 +86,36 @@ class PuntoVendita(MethodView):
         try:
             # Controllo se gli id inseriti nel json della request esistono
             check_azienda = mongo.cx['TopFidelityCard'].azienda.find_one(
-                {"$and": [{"_id": ObjectId(dati_punto_vendita['IdAzienda'])}, {"Eliminato": False}]})
+                {"_id": ObjectId(dati_punto_vendita['IdAzienda']), "Eliminato": False})
             if not check_azienda:
-                abort(404,
-                      message="Azienda inserita inesistente")
+                abort(404, message="Azienda inserita inesistente")
             check_t_punto_vendita = mongo.cx['TopFidelityCard'].tipoPuntoVendita.find_one(
-                {"$and": [{"_id": ObjectId(dati_punto_vendita['IdTipoPuntoVendita'])}, {"Eliminato": False}]})
+                {"_id": ObjectId(dati_punto_vendita['IdTipoPuntoVendita']), "Eliminato": False})
             if not check_t_punto_vendita:
-                abort(404,
-                      message="Tipo punto vendita inserito inesistente")
+                abort(404, message="Tipo punto vendita inserito inesistente")
 
             punto_vendita = mongo.cx['TopFidelityCard'].puntoVendita.find_one_and_update(
-                {"$and": [{"_id": ObjectId(idPuntoVendita)}, {"Eliminato": False}]},
+                {"_id": ObjectId(idPuntoVendita), "Eliminato": False},
                 {"$set": dati_punto_vendita},
                 return_document=True)
             if not punto_vendita:
-                abort(404,
-                      message="Punto vendita non trovato")
+                abort(404, message="Punto vendita non trovato")
             return punto_vendita
         except TypeError:
-            abort(400,
-                  message=f"Uno o entrambi gli id inseriti non sono validi, controlla e riprova")
+            abort(400, message=f"Uno o entrambi gli id inseriti non sono validi, controlla e riprova")
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
             field_error = list(key_pattern.keys())
-            abort(400,
-                  message=f"Richiesta non valida, '{field_error[0]}' già esistente")
+            abort(400, message=f"Richiesta non valida, '{field_error[0]}' già esistente")
         except InvalidDocument:
-            abort(400,
-                  message="IdAzienda e/o idTipoPuntoVendita "
-                          "non valido/i, riprova")
+            abort(400, message="IdAzienda e/o idTipoPuntoVendita non valido/i, riprova")
         except InvalidId:
-            abort(400,
-                  message="Id punto vendita non valido, riprova")
-        # except Exception as e:
-        #     abort(400,
-        #           message=f"Errore non previsto: {e}")
+            abort(400, message="Id punto vendita non valido, riprova")
+        # Necessario per evitare che if not azienda vada per l'exception generica
+        except HTTPException:
+            raise
+        except Exception as e:
+            abort(500, message=f"Errore non previsto: {e}")
 
 
 @blp.route('/PuntoVendita/delete/<string:idPuntoVendita>')
@@ -135,48 +127,47 @@ class PuntoVendita(MethodView):
             if dati_punto_vendita['Eliminato']:
                 # Controllo se l'id inserito nella url esiste
                 check = mongo.cx['TopFidelityCard'].puntoVendita.find_one(
-                    {"$and": [{"_id": ObjectId(idPuntoVendita)}, {"Eliminato": False}]})
+                    {"_id": ObjectId(idPuntoVendita), "Eliminato": False})
                 if not check:
-                    abort(404,
-                          message="Punto vendita non trovato")
+                    abort(404, message="Punto vendita non trovato")
 
                 # Eliminazione logica
                 mongo.cx['TopFidelityCard'].puntoVendita.update_one(
-                    {"$and": [{"_id": ObjectId(idPuntoVendita)}, {"Eliminato": False}]},
+                    {"_id": ObjectId(idPuntoVendita), "Eliminato": False},
                     {"$set": {"Eliminato": True}})
 
                 # Controllo delle tessere legate al punto vendita eliminato
                 tessere = mongo.cx['TopFidelityCard'].tessera.find(
-                    {"$and": [{"IdPuntoVendita": ObjectId(idPuntoVendita)}, {"Eliminato": False}]})
+                    {"IdPuntoVendita": ObjectId(idPuntoVendita), "Eliminato": False})
 
                 # Controllo dei consumatori legati alle tessere da eliminare
                 for tessera in tessere:
                     consumatori = mongo.cx['TopFidelityCard'].consumatore.find(
-                        {"$and": [{"IdTessera": tessera['_id']}, {"Eliminato": False}]})
+                        {"IdTessera": tessera['_id'], "Eliminato": False})
 
                     # Eliminazione degli acquisti legati ai consumatori da eliminare
                     for consumatore in consumatori:
                         mongo.cx['TopFidelityCard'].acquisto.update_many(
-                            {"$and": [{"IdConsumatore": consumatore['_id']}, {"Eliminato": False}]},
+                            {"IdConsumatore": consumatore['_id'], "Eliminato": False},
                             {"$set": {"Eliminato": True}})
 
                     # Eliminazione "cascade" su consumatore
                     mongo.cx['TopFidelityCard'].consumatore.update_many(
-                        {"$and": [{"IdTessera": tessera['_id']}, {"Eliminato": False}]},
+                        {"IdTessera": tessera['_id'], "Eliminato": False},
                         {"$set": {"Eliminato": True}})
 
                 # Eliminazione "cascade" su tessera
                 mongo.cx['TopFidelityCard'].tessera.update_many(
-                    {"$and": [{"IdPuntoVendita": ObjectId(idPuntoVendita)}, {"Eliminato": False}]},
+                    {"IdPuntoVendita": ObjectId(idPuntoVendita), "Eliminato": False},
                     {"$set": {"Eliminato": True}})
 
                 return {'message': "Punto vendita e relativi documenti eliminati logicamente"}, 200
             else:
-                abort(404,
-                      message="Impostare il parametro eliminato su true per usare questa procedura")
+                abort(404, message="Impostare il parametro eliminato su true per usare questa procedura")
         except InvalidId:
-            abort(400,
-                  message="Id punto vendita non valido, riprova")
-        # except Exception as e:
-        #     abort(400,
-        #           message=f"Errore non previsto: {e}")
+            abort(400, message="Id punto vendita non valido, riprova")
+        # Necessario per evitare che if not azienda vada per l'exception generica
+        except HTTPException:
+            raise
+        except Exception as e:
+            abort(500, message=f"Errore non previsto: {e}")
