@@ -61,9 +61,8 @@ class Azienda(MethodView):
 
             dati_azienda['Eliminato'] = False
             result = mongo.cx['TopFidelityCard'].azienda.insert_one(dati_azienda)
-            azienda = mongo.cx['TopFidelityCard'].azienda.find_one(
-                {"_id": result.inserted_id, "Eliminato": False})
-            return azienda
+            dati_azienda['_id'] = result.inserted_id
+            return dati_azienda
         except TypeError:
             abort(400, message=f"Id tipo azienda inserito non valido, controlla che sia giusto")
         except DuplicateKeyError as e:
@@ -124,13 +123,13 @@ class Azienda(MethodView):
             if not dati_azienda['Eliminato']:
                 abort(404, message="Impostare il parametro eliminato su true per usare questa procedura")
 
-            # Controllo se l'id azienda inserito nell'url esiste
+            # Controllo se l'id inserito nell'url esiste
             check = mongo.cx['TopFidelityCard'].azienda.find_one(
                 {"_id": ObjectId(idAzienda), "Eliminato": False})
             if not check:
                 abort(404, message="Azienda non trovata")
 
-            # Eliminazione logica di azienda
+            # Eliminazione logica dell'azienda
             mongo.cx['TopFidelityCard'].azienda.update_one(
                 {"_id": ObjectId(idAzienda), "Eliminato": False},
                 {"$set": {"Eliminato": True}})
