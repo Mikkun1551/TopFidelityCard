@@ -33,14 +33,14 @@ class Acquisto(MethodView):
         try:
             acquisto = mongo.cx['TopFidelityCard'].acquisto.find_one(
                     {"_id": ObjectId(idAcquisto), "Eliminato": False})
-            if acquisto is None:
+            if not acquisto:
                 abort(404,
                       message="Acquisto non trovato")
             return acquisto
         except InvalidId:
             abort(400,
                   message="Id non valido, riprova")
-        # Necessario per evitare che if not azienda vada per l'exception generica
+        # Necessario per evitare che if not acquisto vada per l'exception generica
         except HTTPException:
             raise
         except Exception as e:
@@ -63,13 +63,12 @@ class Acquisto(MethodView):
 
             dati_acquisto['Eliminato'] = False
             result = mongo.cx['TopFidelityCard'].acquisto.insert_one(dati_acquisto)
-            acquisto = mongo.cx['TopFidelityCard'].acquisto.find_one(
-                {"_id": result.inserted_id, "Eliminato": False})
-            return acquisto
+            dati_acquisto['_id'] = result.inserted_id
+            return dati_acquisto
         except TypeError:
             abort(400,
                   message=f"Id consumatore inserito non valido, controlla che sia giusto")
-        # Necessario per evitare che if not azienda vada per l'exception generica
+        # Necessario per evitare che if not check vada per l'exception generica
         except HTTPException:
             raise
         except Exception as e:
@@ -107,7 +106,7 @@ class Acquisto(MethodView):
         except InvalidId:
             abort(400,
                   message="Id acquisto non valido, riprova")
-        # Necessario per evitare che if not azienda vada per l'exception generica
+        # Necessario per evitare che if not check vada per l'exception generica
         except HTTPException:
             raise
         except Exception as e:
@@ -120,27 +119,27 @@ class Acquisto(MethodView):
     # Cambia il flag eliminato di un'acquisto per cancellarlo logicamente
     def put(self, dati_acquisto, idAcquisto):
         try:
-            if dati_acquisto['Eliminato']:
-                # Controllo se l'id inserito nella url esiste
-                check = mongo.cx['TopFidelityCard'].acquisto.find_one(
-                    {"_id": ObjectId(idAcquisto), "Eliminato": False})
-                if not check:
-                    abort(404,
-                          message="Acquisto non trovato")
+            # Controllo che la procedura venga avviata
+            if not dati_acquisto['Eliminato']:
+                abort(404, message="Impostare il parametro eliminato su true per usare questa procedura")
 
-                # Eliminazione logica
-                mongo.cx['TopFidelityCard'].acquisto.update_one(
-                    {"_id": ObjectId(idAcquisto), "Eliminato": False},
-                    {"$set": {"Eliminato": True}})
-
-                return {'message': "Acquisto eliminato logicamente"}, 200
-            else:
+            # Controllo se l'id inserito nella url esiste
+            check = mongo.cx['TopFidelityCard'].acquisto.find_one(
+                {"_id": ObjectId(idAcquisto), "Eliminato": False})
+            if not check:
                 abort(404,
-                      message="Impostare il parametro eliminato su true per usare questa procedura")
+                      message="Acquisto non trovato")
+
+            # Eliminazione logica
+            mongo.cx['TopFidelityCard'].acquisto.update_one(
+                {"_id": ObjectId(idAcquisto), "Eliminato": False},
+                {"$set": {"Eliminato": True}})
+            return {'message': "Acquisto eliminato logicamente"}, 200
+
         except InvalidId:
             abort(400,
                   message="Id acquisto non valido, riprova")
-        # Necessario per evitare che if not azienda vada per l'exception generica
+        # Necessario per evitare che if not check vada per l'exception generica
         except HTTPException:
             raise
         except Exception as e:

@@ -34,14 +34,14 @@ class Consumatore(MethodView):
         try:
             consumatore = mongo.cx['TopFidelityCard'].consumatore.find_one(
                 {"_id": ObjectId(idConsumatore), "Eliminato": False})
-            if consumatore is None:
+            if not consumatore:
                 abort(404,
                       message="Consumatore non trovato")
             return consumatore
         except InvalidId:
             abort(400,
                   message="Id non valido, riprova")
-        # Necessario per evitare che if not azienda vada per l'exception generica
+        # Necessario per evitare che if not consumatore vada per l'exception generica
         except HTTPException:
             raise
         except Exception as e:
@@ -64,9 +64,8 @@ class Consumatore(MethodView):
 
             dati_consumatore['Eliminato'] = False
             result = mongo.cx['TopFidelityCard'].consumatore.insert_one(dati_consumatore)
-            consumatore = mongo.cx['TopFidelityCard'].consumatore.find_one(
-                {"_id": result.inserted_id, "Eliminato": False})
-            return consumatore
+            dati_consumatore['_id'] = result.inserted_id
+            return dati_consumatore
         except TypeError:
             abort(400,
                   message=f"Id tessera inserito non valido, controlla che sia giusto")
@@ -85,7 +84,7 @@ class Consumatore(MethodView):
             else:
                 abort(400,
                       message=f"Richiesta non valida, errore non noto")
-        # Necessario per evitare che if not azienda vada per l'exception generica
+        # Necessario per evitare che if not check vada per l'exception generica
         except HTTPException:
             raise
         except Exception as e:
@@ -138,7 +137,7 @@ class Consumatore(MethodView):
         except InvalidId:
             abort(400,
                   message="Id consumatore non valido, riprova")
-        # Necessario per evitare che if not azienda vada per l'exception generica
+        # Necessario per evitare che if not check vada per l'exception generica
         except HTTPException:
             raise
         except Exception as e:
@@ -151,32 +150,31 @@ class Consumatore(MethodView):
     # Cambia il flag eliminato di un consumatore per cancellarlo logicamente
     def put(self, dati_consumatore, idConsumatore):
         try:
-            if dati_consumatore['Eliminato']:
-                # Controllo se l'id inserito nella url esiste
-                check = mongo.cx['TopFidelityCard'].consumatore.find_one(
-                    {"_id": ObjectId(idConsumatore), "Eliminato": False})
-                if not check:
-                    abort(404,
-                          message="Consumatore non trovato")
+            # Controllo che la procedura venga avviata
+            if not dati_consumatore['Eliminato']:
+                abort(404, message="Impostare il parametro eliminato su true per usare questa procedura")
 
-                # Eliminazione logica
-                mongo.cx['TopFidelityCard'].consumatore.update_one(
-                    {"_id": ObjectId(idConsumatore), "Eliminato": False},
-                    {"$set": {"Eliminato": True}})
-
-                # Eliminazione "cascade" su acquisto
-                mongo.cx['TopFidelityCard'].acquisto.update_many(
-                    {"IdConsumatore": ObjectId(idConsumatore), "Eliminato": False},
-                    {"$set": {"Eliminato": True}})
-
-                return {'message': "Consumatore e relativi acquisti eliminati logicamente"}, 200
-            else:
+            # Controllo se l'id inserito nella url esiste
+            check = mongo.cx['TopFidelityCard'].consumatore.find_one(
+                {"_id": ObjectId(idConsumatore), "Eliminato": False})
+            if not check:
                 abort(404,
-                      message="Impostare il parametro eliminato su true per usare questa procedura")
+                      message="Consumatore non trovato")
+
+            # Eliminazione logica consumatore
+            mongo.cx['TopFidelityCard'].consumatore.update_one(
+                {"_id": ObjectId(idConsumatore), "Eliminato": False},
+                {"$set": {"Eliminato": True}})
+            # Eliminazione logica su acquisto
+            mongo.cx['TopFidelityCard'].acquisto.update_many(
+                {"IdConsumatore": ObjectId(idConsumatore), "Eliminato": False},
+                {"$set": {"Eliminato": True}})
+            return {'message': "Consumatore e relativi acquisti eliminati logicamente"}, 200
+
         except InvalidId:
             abort(400,
                   message="Id consumatore non valido, riprova")
-        # Necessario per evitare che if not azienda vada per l'exception generica
+        # Necessario per evitare che if not check vada per l'exception generica
         except HTTPException:
             raise
         except Exception as e:

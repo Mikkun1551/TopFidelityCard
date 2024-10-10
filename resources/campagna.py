@@ -33,12 +33,12 @@ class Campagna(MethodView):
         try:
             campagna = mongo.cx['TopFidelityCard'].campagna.find_one(
                 {"_id": ObjectId(idCampagna), "Eliminato": False})
-            if campagna is None:
+            if not campagna:
                 abort(404, message="Campagna non trovata")
             return campagna
         except InvalidId:
             abort(400, message="Id non valido, riprova")
-        # Necessario per evitare che if not azienda vada per l'exception generica
+        # Necessario per evitare che if not campagna vada per l'exception generica
         except HTTPException:
             raise
         except Exception as e:
@@ -60,12 +60,11 @@ class Campagna(MethodView):
 
             dati_campagna['Eliminato'] = False
             result = mongo.cx['TopFidelityCard'].campagna.insert_one(dati_campagna)
-            campagna = mongo.cx['TopFidelityCard'].campagna.find_one(
-                {"_id": result.inserted_id, "Eliminato": False})
-            return campagna
+            dati_campagna['_id'] = result.inserted_id
+            return dati_campagna
         except TypeError:
             abort(400, message=f"Id azienda inserito non valido, controlla che sia giusto")
-        # Necessario per evitare che if not azienda vada per l'exception generica
+        # Necessario per evitare che if not check vada per l'exception generica
         except HTTPException:
             raise
         except Exception as e:
@@ -98,7 +97,7 @@ class Campagna(MethodView):
             abort(400, message="IdAzienda non valido, riprova")
         except InvalidId:
             abort(400, message="Id campagna non valido, riprova")
-        # Necessario per evitare che if not azienda vada per l'exception generica
+        # Necessario per evitare che if not check vada per l'exception generica
         except HTTPException:
             raise
         except Exception as e:
@@ -111,29 +110,29 @@ class Campagna(MethodView):
     # Cambia il flag eliminato di una campagna per cancellarlo logicamente
     def put(self, dati_campagna, idCampagna):
         try:
-            if dati_campagna['Eliminato']:
-                # Controllo se l'id inserito nella url esiste
-                check = mongo.cx['TopFidelityCard'].campagna.find_one(
-                    {"_id": ObjectId(idCampagna), "Eliminato": False})
-                if not check:
-                    abort(404, message="Campagna non trovata")
-
-                # Eliminazione logica
-                mongo.cx['TopFidelityCard'].campagna.update_one(
-                    {"_id": ObjectId(idCampagna), "Eliminato": False},
-                    {"$set": {"Eliminato": True}})
-
-                # Eliminazione "cascade" su premio
-                mongo.cx['TopFidelityCard'].premio.update_many(
-                    {"IdCampagna": ObjectId(idCampagna), "Eliminato": False},
-                    {"$set": {"Eliminato": True}})
-
-                return {'message': "Campagna e relativi premi eliminati logicamente"}, 200
-            else:
+            # Controllo che la procedura venga avviata
+            if not dati_campagna['Eliminato']:
                 abort(404, message="Impostare il parametro eliminato su true per usare questa procedura")
+
+            # Controllo se l'id inserito nella url esiste
+            check = mongo.cx['TopFidelityCard'].campagna.find_one(
+                {"_id": ObjectId(idCampagna), "Eliminato": False})
+            if not check:
+                abort(404, message="Campagna non trovata")
+
+            # Eliminazione logica della campagna
+            mongo.cx['TopFidelityCard'].campagna.update_one(
+                {"_id": ObjectId(idCampagna), "Eliminato": False},
+                {"$set": {"Eliminato": True}})
+            # Eliminazione dei premi legati alla campagna eliminata
+            mongo.cx['TopFidelityCard'].premio.update_many(
+                {"IdCampagna": ObjectId(idCampagna), "Eliminato": False},
+                {"$set": {"Eliminato": True}})
+            return {'message': "Campagna e relativi premi eliminati logicamente"}, 200
+
         except InvalidId:
             abort(400, message="Id campagna non valido, riprova")
-        # Necessario per evitare che if not azienda vada per l'exception generica
+        # Necessario per evitare che if not check vada per l'exception generica
         except HTTPException:
             raise
         except Exception as e:

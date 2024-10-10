@@ -33,12 +33,12 @@ class Premio(MethodView):
         try:
             premio = mongo.cx['TopFidelityCard'].premio.find_one(
                 {"_id": ObjectId(idPremio), "Eliminato": False})
-            if premio is None:
+            if not premio:
                 abort(404, message="Premio non trovato")
             return premio
         except InvalidId:
             abort(400, message="Id non valido, riprova")
-        # Necessario per evitare che if not azienda vada per l'exception generica
+        # Necessario per evitare che if not premio vada per l'exception generica
         except HTTPException:
             raise
         except Exception as e:
@@ -60,12 +60,11 @@ class Premio(MethodView):
 
             dati_premio['Eliminato'] = False
             result = mongo.cx['TopFidelityCard'].premio.insert_one(dati_premio)
-            premio = mongo.cx['TopFidelityCard'].premio.find_one(
-                {"_id": result.inserted_id, "Eliminato": False})
-            return premio
+            dati_premio['_id'] = result.inserted_id
+            return dati_premio
         except TypeError:
             abort(400, message=f"Id campagna inserito non valido, controlla che sia giusto")
-        # Necessario per evitare che if not azienda vada per l'exception generica
+        # Necessario per evitare che if not check vada per l'exception generica
         except HTTPException:
             raise
         except Exception as e:
@@ -98,7 +97,7 @@ class Premio(MethodView):
             abort(400, message="IdCampagna non valido, riprova")
         except InvalidId:
             abort(400, message="Id premio non valido, riprova")
-        # Necessario per evitare che if not azienda vada per l'exception generica
+        # Necessario per evitare che if not check vada per l'exception generica
         except HTTPException:
             raise
         except Exception as e:
@@ -111,24 +110,25 @@ class Premio(MethodView):
     # Cambia il flag eliminato di un premio per cancellarlo logicamente
     def put(self, dati_premio, idPremio):
         try:
-            if dati_premio['Eliminato']:
-                # Controllo se l'id inserito nella url esiste
-                check = mongo.cx['TopFidelityCard'].premio.find_one(
-                    {"_id": ObjectId(idPremio), "Eliminato": False})
-                if not check:
-                    abort(404, message="Premio non trovato")
-
-                # Eliminazione logica
-                mongo.cx['TopFidelityCard'].premio.update_one(
-                    {"_id": ObjectId(idPremio), "Eliminato": False},
-                    {"$set": {"Eliminato": True}})
-
-                return {'message': "Premio eliminato logicamente"}, 200
-            else:
+            # Controllo che la procedura venga avviata
+            if not dati_premio['Eliminato']:
                 abort(404, message="Impostare il parametro eliminato su true per usare questa procedura")
+
+            # Controllo se l'id inserito nella url esiste
+            check = mongo.cx['TopFidelityCard'].premio.find_one(
+                {"_id": ObjectId(idPremio), "Eliminato": False})
+            if not check:
+                abort(404, message="Premio non trovato")
+
+            # Eliminazione logica
+            mongo.cx['TopFidelityCard'].premio.update_one(
+                {"_id": ObjectId(idPremio), "Eliminato": False},
+                {"$set": {"Eliminato": True}})
+            return {'message': "Premio eliminato logicamente"}, 200
+
         except InvalidId:
             abort(400, message="Id premio non valido, riprova")
-        # Necessario per evitare che if not azienda vada per l'exception generica
+        # Necessario per evitare che if not check vada per l'exception generica
         except HTTPException:
             raise
         except Exception as e:

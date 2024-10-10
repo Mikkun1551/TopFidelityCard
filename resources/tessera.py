@@ -34,12 +34,12 @@ class Tessera(MethodView):
         try:
             tessera = mongo.cx['TopFidelityCard'].tessera.find_one(
                 {"_id": ObjectId(idTessera), "Eliminato": False})
-            if tessera is None:
+            if not tessera:
                 abort(404, message="Tessera non trovata")
             return tessera
         except InvalidId:
             abort(400, message="Id non valido, riprova")
-        # Necessario per evitare che if not azienda vada per l'exception generica
+        # Necessario per evitare che if not tessera vada per l'exception generica
         except HTTPException:
             raise
         except Exception as e:
@@ -61,16 +61,15 @@ class Tessera(MethodView):
 
             dati_tessera['Eliminato'] = False
             result = mongo.cx['TopFidelityCard'].tessera.insert_one(dati_tessera)
-            tessera = mongo.cx['TopFidelityCard'].tessera.find_one(
-                {"_id": result.inserted_id, "Eliminato": False})
-            return tessera
+            dati_tessera['_id'] = result.inserted_id
+            return dati_tessera
         except TypeError:
             abort(400, message=f"Id punto vendita inserito non valido, controlla che sia giusto")
         except DuplicateKeyError as e:
             key_pattern = e.details.get("keyPattern")
             field_error = list(key_pattern.keys())
             abort(400, message=f"Richiesta non valida, '{field_error[0]}' già esistente")
-        # Necessario per evitare che if not azienda vada per l'exception generica
+        # Necessario per evitare che if not check vada per l'exception generica
         except HTTPException:
             raise
         except Exception as e:
@@ -107,7 +106,7 @@ class Tessera(MethodView):
             abort(400, message="IdPuntoVendita non valido, riprova")
         except InvalidId:
             abort(400, message="Id tessera non valido, riprova")
-        # Necessario per evitare che if not azienda vada per l'exception generica
+        # Necessario per evitare che if not check vada per l'exception generica
         except HTTPException:
             raise
         except Exception as e:
@@ -120,39 +119,39 @@ class Tessera(MethodView):
     # Cambia il flag eliminato di una tessera per cancellarla logicamente
     def put(self, dati_tessera, idTessera):
         try:
-            if dati_tessera['Eliminato']:
-                # Controllo se l'id inserito nella url esiste
-                check = mongo.cx['TopFidelityCard'].tessera.find_one(
-                    {"_id": ObjectId(idTessera), "Eliminato": False})
-                if not check:
-                    abort(404, message="Tessera non trovata")
-
-                # Eliminazione logica
-                mongo.cx['TopFidelityCard'].tessera.update_one(
-                    {"_id": ObjectId(idTessera), "Eliminato": False},
-                    {"$set": {"Eliminato": True}})
-
-                # Controllo dei consumatori legati alla tessera eliminata
-                consumatori = mongo.cx['TopFidelityCard'].consumatore.find(
-                    {"IdTessera": ObjectId(idTessera), "Eliminato": False})
-
-                # Eliminazione degli acquisti legati ai consumatori eliminati
-                for consumatore in consumatori:
-                    mongo.cx['TopFidelityCard'].acquisto.update_many(
-                        {"IdConsumatore": consumatore['_id'], "Eliminato": False},
-                        {"$set": {"Eliminato": True}})
-
-                # Eliminazione "cascade" su consumatore
-                mongo.cx['TopFidelityCard'].consumatore.update_many(
-                    {"IdTessera": ObjectId(idTessera), "Eliminato": False},
-                    {"$set": {"Eliminato": True}})
-
-                return {'message': "Tessera e relativi documenti eliminati logicamente"}, 200
-            else:
+            # Controllo che la procedura venga avviata
+            if not dati_tessera['Eliminato']:
                 abort(404, message="Impostare il parametro eliminato su true per usare questa procedura")
+
+            # Controllo se l'id inserito nella url esiste
+            check = mongo.cx['TopFidelityCard'].tessera.find_one(
+                {"_id": ObjectId(idTessera), "Eliminato": False})
+            if not check:
+                abort(404, message="Tessera non trovata")
+
+            # Eliminazione logica tessera
+            mongo.cx['TopFidelityCard'].tessera.update_one(
+                {"_id": ObjectId(idTessera), "Eliminato": False},
+                {"$set": {"Eliminato": True}})
+            # Controllo dei consumatori legati alla tessera eliminata
+            consumatori = mongo.cx['TopFidelityCard'].consumatore.find(
+                {"IdTessera": ObjectId(idTessera), "Eliminato": False})
+
+            # Eliminazione degli acquisti legati ai consumatori eliminati
+            for consumatore in consumatori:
+                mongo.cx['TopFidelityCard'].acquisto.update_many(
+                    {"IdConsumatore": consumatore['_id'], "Eliminato": False},
+                    {"$set": {"Eliminato": True}})
+
+            # Eliminazione logica su consumatore
+            mongo.cx['TopFidelityCard'].consumatore.update_many(
+                {"IdTessera": ObjectId(idTessera), "Eliminato": False},
+                {"$set": {"Eliminato": True}})
+            return {'message': "Tessera e relativi documenti eliminati logicamente"}, 200
+
         except InvalidId:
             abort(400, message="Id tessera non valido, riprova")
-        # Necessario per evitare che if not azienda vada per l'exception generica
+        # Necessario per evitare che if not check vada per l'exception generica
         except HTTPException:
             raise
         except Exception as e:
