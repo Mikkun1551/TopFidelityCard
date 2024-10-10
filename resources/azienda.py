@@ -146,7 +146,6 @@ class Azienda(MethodView):
         except Exception as e:
             abort(500, message=f"Errore non previsto: {e}")
 
-
     @staticmethod
     def delete_logica_campagna(idAzienda):
         # Controllo delle campagne legate all'azienda eliminata
