@@ -93,36 +93,6 @@ class PlainAcquistoSchema(Schema):
     Eliminato = fields.Bool(dump_only=True)
 
 
-
-class DeleteAziendaSchema(Schema):
-    Eliminato = fields.Bool(required=True)
-
-class DeleteTipoAziendaSchema(Schema):
-    Eliminato = fields.Bool(required=True)
-
-class DeletePuntoVenditaSchema(Schema):
-    Eliminato = fields.Bool(required=True)
-
-class DeleteTipoPuntoVenditaSchema(Schema):
-    Eliminato = fields.Bool(required=True)
-
-class DeleteCampagnaSchema(Schema):
-    Eliminato = fields.Bool(required=True)
-
-class DeletePremioSchema(Schema):
-    Eliminato = fields.Bool(required=True)
-
-class DeleteTesseraSchema(Schema):
-    Eliminato = fields.Bool(required=True)
-
-class DeleteConsumatoreSchema(Schema):
-    Eliminato = fields.Bool(required=True)
-
-class DeleteAcquistoSchema(Schema):
-    Eliminato = fields.Bool(required=True)
-
-
-
 # Schema per gli update
 class UpdateAziendaSchema(Schema):
     Nome = fields.Str()
@@ -189,34 +159,54 @@ class UpdateAcquistoSchema(Schema):
     IdConsumatore = ObjectIdField()
 
 
+# Schema per le delete
+class DeleteAziendaSchema(Schema):
+    Eliminato = fields.Bool(required=True)
 
-# Schema a parte per le foreign key
+class DeleteTipoAziendaSchema(Schema):
+    Eliminato = fields.Bool(required=True)
+
+class DeletePuntoVenditaSchema(Schema):
+    Eliminato = fields.Bool(required=True)
+
+class DeleteTipoPuntoVenditaSchema(Schema):
+    Eliminato = fields.Bool(required=True)
+
+class DeleteCampagnaSchema(Schema):
+    Eliminato = fields.Bool(required=True)
+
+class DeletePremioSchema(Schema):
+    Eliminato = fields.Bool(required=True)
+
+class DeleteTesseraSchema(Schema):
+    Eliminato = fields.Bool(required=True)
+
+class DeleteConsumatoreSchema(Schema):
+    Eliminato = fields.Bool(required=True)
+
+class DeleteAcquistoSchema(Schema):
+    Eliminato = fields.Bool(required=True)
+
+
+# Schema per le "foreign key"
 class AziendaSchema(PlainAziendaSchema):
     IdTipoAzienda = ObjectIdField(required=True)
-    tipoAzienda = fields.Nested(TipoAziendaSchema(), dump_only=True)
 
 class PuntoVenditaSchema(PlainPuntoVenditaSchema):
     IdTipoPuntoVendita = ObjectIdField(required=True)
-    tipoPuntoVendita = fields.Nested(TipoPuntoVenditaSchema(), dump_only=True)
     IdAzienda = ObjectIdField(required=True)
-    azienda = fields.Nested(AziendaSchema(), dump_only=True)
 
 class CampagnaSchema(PlainCampagnaSchema):
     IdAzienda = ObjectIdField(required=True)
-    azienda = fields.Nested(AziendaSchema(), dump_only=True)
 
 class PremioSchema(PlainPremioSchema):
     IdCampagna = ObjectIdField(required=True)
-    campagna = fields.Nested(CampagnaSchema(), dump_only=True)
 
 class TesseraSchema(PlainTesseraSchema):
     IdPuntoVendita = ObjectIdField(required=True)
-    puntoVendita = fields.Nested(PuntoVenditaSchema(), dump_only=True)
 
 class ConsumatoreSchema(PlainConsumatoreSchema):
     IdTessera = ObjectIdField(required=True)
-    tessera = fields.Nested(TesseraSchema(), dump_only=True)
 
 class AcquistoSchema(PlainAcquistoSchema):
     IdConsumatore = ObjectIdField(required=True)
-    consumatore = fields.Nested(ConsumatoreSchema(), dump_only=True)
